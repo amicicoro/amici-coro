@@ -1,0 +1,27 @@
+{
+  "id": "2",
+  "title": "St. George's Chapel, Windsor Residency",
+  "isResidency": true,
+  "date": "2024-08-10T00:00:00+01:00",
+  "endDate": "2024-08-11T23:59:59+01:00",
+  "venueId": "5",
+  "slug": "st-georges-chapel-windsor-residency-2024",
+  "description": "Amici Coro had the honor of performing at St. George's Chapel, Windsor Castle for a weekend in August 2024. The choir sang Evensong on Saturday and Sunday, as well as the Sunday Eucharist.",
+  "schedule": [],
+  "musicList": {
+    "Saturday Evensong": [
+      "Introit: O Lord, Give Thy Holy Spirit - Tallis",
+      "Responses: Ayleward",
+      "Canticles: Collegium Regale - Wood",
+      "Anthem: Beati Quorum Via - Stanford"
+    ],
+    "Sunday Sung Eucharist": ["Mass Setting: Missa Brevis - Palestrina", "Motet: O Sacrum Convivium - Tallis"],
+    "Sunday Evensong": [
+      "Introit: If Ye Love Me - Tallis",
+      "Responses: Ayleward",
+      "Canticles: Fauxbourdons - Morley",
+      "Anthem: Hear My Prayer - Purcell"
+    ]
+  }
+}
+

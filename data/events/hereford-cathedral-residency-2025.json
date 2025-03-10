@@ -1,0 +1,25 @@
+{
+  "id": "3",
+  "title": "Hereford Cathedral Residency",
+  "isResidency": true,
+  "date": "2025-08-09T00:00:00+01:00",
+  "endDate": "2025-08-10T23:59:59+01:00",
+  "venueId": "3",
+  "slug": "hereford-cathedral-residency-2025",
+  "description": "A weekend of choral music in the historic Hereford Cathedral.",
+  "schedule": [
+    {
+      "date": "2025-08-09T17:30:00+01:00",
+      "description": "Evensong"
+    },
+    {
+      "date": "2025-08-10T10:00:00+01:00",
+      "description": "Sung Eucharist"
+    },
+    {
+      "date": "2025-08-10T15:30:00+01:00",
+      "description": "Evensong"
+    }
+  ]
+}
+

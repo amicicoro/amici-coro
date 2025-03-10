@@ -1,0 +1,101 @@
+{
+  "id": "6",
+  "title": "Truro Cathedral Residency",
+  "isResidency": true,
+  "date": "2023-08-07T00:00:00+01:00",
+  "endDate": "2023-08-13T23:59:59+01:00",
+  "venueId": "9",
+  "slug": "truro-cathedral-residency-2023",
+  "description": "Amici Coro had the privilege of singing at Truro Cathedral for a full week in August 2023. The choir performed Evensong each evening from Monday to Saturday, and on Sunday they sang at the Eucharist and Evensong services.",
+  "schedule": [
+    {
+      "date": "2023-08-07T17:30:00+01:00",
+      "description": "Evensong"
+    },
+    {
+      "date": "2023-08-08T17:30:00+01:00",
+      "description": "Evensong"
+    },
+    {
+      "date": "2023-08-09T17:30:00+01:00",
+      "description": "Evensong"
+    },
+    {
+      "date": "2023-08-10T17:30:00+01:00",
+      "description": "Evensong"
+    },
+    {
+      "date": "2023-08-11T17:30:00+01:00",
+      "description": "Evensong"
+    },
+    {
+      "date": "2023-08-12T17:30:00+01:00",
+      "description": "Evensong"
+    },
+    {
+      "date": "2023-08-13T10:00:00+01:00",
+      "description": "Sung Eucharist"
+    },
+    {
+      "date": "2023-08-13T16:00:00+01:00",
+      "description": "Evensong"
+    }
+  ],
+  "musicList": {
+    "Monday Evensong": [
+      "Introit: O Lord, Give Thy Holy Spirit - Tallis",
+      "Responses: Ayleward",
+      "Psalms: 37",
+      "Canticles: Collegium Regale - Wood",
+      "Anthem: Beati Quorum Via - Stanford"
+    ],
+    "Tuesday Evensong": [
+      "Introit: If Ye Love Me - Tallis",
+      "Responses: Ayleward",
+      "Psalms: 42 & 43",
+      "Canticles: Fauxbourdons - Morley",
+      "Anthem: Hear My Prayer - Purcell"
+    ],
+    "Wednesday Evensong": [
+      "Introit: O Nata Lux - Tallis",
+      "Responses: Ayleward",
+      "Psalms: 49",
+      "Canticles: Short Service - Gibbons",
+      "Anthem: O Clap Your Hands - Gibbons"
+    ],
+    "Thursday Evensong": [
+      "Introit: Salvator Mundi - Tallis",
+      "Responses: Ayleward",
+      "Psalms: 55",
+      "Canticles: Evening Service in G - Sumsion",
+      "Anthem: Like as the Hart - Howells"
+    ],
+    "Friday Evensong": [
+      "Introit: Jesu, The Very Thought of Thee - Bairstow",
+      "Responses: Ayleward",
+      "Psalms: 60, 61",
+      "Canticles: Evening Service in D - Dyson",
+      "Anthem: Let All Mortal Flesh Keep Silence - Bairstow"
+    ],
+    "Saturday Evensong": [
+      "Introit: Ave Verum Corpus - Byrd",
+      "Responses: Ayleward",
+      "Psalms: 66, 67",
+      "Canticles: Evening Service in B flat - Stanford",
+      "Anthem: Bring Us, O Lord God - Harris"
+    ],
+    "Sunday Sung Eucharist": [
+      "Mass Setting: Missa Brevis - Palestrina",
+      "Motet: O Sacrum Convivium - Tallis",
+      "Psalms: 85 vv8-13"
+    ],
+    "Sunday Evensong": [
+      "Introit: O Taste and See - Vaughan Williams",
+      "Responses: Ayleward",
+      "Psalms: 86",
+      "Canticles: Evening Service in A - Stanford",
+      "Anthem: Blessed City, Heavenly Salem - Bairstow"
+    ]
+  }
+}
+

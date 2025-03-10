@@ -1,0 +1,27 @@
+{
+  "id": "3",
+  "title": "York Minster Residency",
+  "isResidency": true,
+  "date": "2024-06-01T00:00:00+01:00",
+  "endDate": "2024-06-02T23:59:59+01:00",
+  "venueId": "6",
+  "slug": "york-minster-residency-2024",
+  "description": "Amici Coro had the privilege of singing at York Minster for a weekend in June 2024. The choir performed Evensong on Saturday and Sunday, as well as the Sunday Eucharist.",
+  "schedule": [],
+  "musicList": {
+    "Saturday Evensong": [
+      "Introit: O Lord, Give Thy Holy Spirit - Tallis",
+      "Responses: Ayleward",
+      "Canticles: Collegium Regale - Wood",
+      "Anthem: Beati Quorum Via - Stanford"
+    ],
+    "Sunday Sung Eucharist": ["Mass Setting: Missa Brevis - Palestrina", "Motet: O Sacrum Convivium - Tallis"],
+    "Sunday Evensong": [
+      "Introit: If Ye Love Me - Tallis",
+      "Responses: Ayleward",
+      "Canticles: Fauxbourdons - Morley",
+      "Anthem: Hear My Prayer - Purcell"
+    ]
+  }
+}
+

@@ -1,0 +1,27 @@
+{
+  "id": "1",
+  "title": "Worcester Cathedral Residency",
+  "isResidency": true,
+  "date": "2024-11-02T00:00:00Z",
+  "endDate": "2024-11-03T23:59:59Z",
+  "venueId": "4",
+  "slug": "worcester-cathedral-residency-2024",
+  "description": "Amici Coro had the privilege of singing at Worcester Cathedral for a weekend in November 2024. The choir performed Evensong on Saturday and Sunday, as well as the Sunday Eucharist.",
+  "schedule": [],
+  "musicList": {
+    "Saturday Evensong": [
+      "Introit: Locus Iste - Bruckner",
+      "Responses: Ayleward",
+      "Canticles: Collegium Regale - Wood",
+      "Anthem: Beati Quorum Via - Stanford"
+    ],
+    "Sunday Eucharist": ["Mass Setting: Missa Brevis - Palestrina", "Motet: O Sacrum Convivium - Tallis"],
+    "Sunday Evensong": [
+      "Introit: O Lord, Give Thy Holy Spirit - Tallis",
+      "Responses: Ayleward",
+      "Canticles: Fauxbourdons - Morley",
+      "Anthem: Hear My Prayer - Purcell"
+    ]
+  }
+}
+

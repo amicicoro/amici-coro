@@ -1,0 +1,25 @@
+{
+  "id": "1",
+  "title": "Gloucester Cathedral Residency",
+  "isResidency": true,
+  "date": "2025-04-26T00:00:00Z",
+  "endDate": "2025-04-27T23:59:59+01:00",
+  "venueId": "1",
+  "slug": "gloucester-cathedral-residency-2025",
+  "description": "Join Amici Coro for a weekend of choral music in the magnificent setting of Gloucester Cathedral. The choir will be singing services throughout the weekend, including Evensong on Saturday and Sunday.",
+  "schedule": [
+    {
+      "date": "2025-04-26T17:30:00+01:00",
+      "description": "Evensong"
+    },
+    {
+      "date": "2025-04-27T10:15:00+01:00",
+      "description": "Sung Eucharist"
+    },
+    {
+      "date": "2025-04-27T15:00:00+01:00",
+      "description": "Evensong"
+    }
+  ]
+}
+
