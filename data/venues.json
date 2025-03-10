@@ -5,7 +5,7 @@
     "address": "12 College Green, Gloucester GL1 2LX",
     "website": "https://www.gloucestercathedral.org.uk",
     "timezone": "Europe/London",
-    "imageUrl": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/GLOUCESTER-X4U7VQ8Z34lVlL6NgaMPRUcfI5L5h1.png"
+    "imageUrl": "https://jyqmtgapu0ynowxs.public.blob.vercel-storage.com/data/venues/images/glouchester.png"
   },
   {
     "id": "2",
@@ -13,7 +13,7 @@
     "address": "Ely Cathedral, Ely CB7 4DL",
     "website": "https://www.elycathedral.org",
     "timezone": "Europe/London",
-    "imageUrl": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ely-BqRk15Pt2EEcaafTHeouNl9buIL2cc.png"
+    "imageUrl": "https://jyqmtgapu0ynowxs.public.blob.vercel-storage.com/data/venues/images/ely.png"
   },
   {
     "id": "3",
@@ -21,7 +21,7 @@
     "address": "5 College Cloisters, Cathedral Close, Hereford HR1 2NG",
     "website": "https://www.herefordcathedral.org",
     "timezone": "Europe/London",
-    "imageUrl": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/hereford-lxEfcDMglPnQs58YFAclmUXbAAAvou.png"
+    "imageUrl": "https://jyqmtgapu0ynowxs.public.blob.vercel-storage.com/data/venues/images/hereford.png"
   },
   {
     "id": "4",
@@ -29,7 +29,7 @@
     "address": "8 College Yard, Worcester WR1 2LA",
     "website": "https://www.worcestercathedral.co.uk/",
     "timezone": "Europe/London",
-    "imageUrl": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/WORCESTER-lBcRp2KMwRq3oAIkbg89kju7txdSY2.png"
+    "imageUrl": "https://jyqmtgapu0ynowxs.public.blob.vercel-storage.com/data/venues/images/worcester.png"
   },
   {
     "id": "5",
@@ -37,7 +37,7 @@
     "address": "Windsor Castle, Windsor, Berkshire SL4 1NJ",
     "website": "https://www.stgeorges-windsor.org/",
     "timezone": "Europe/London",
-    "imageUrl": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/st-george's-chapel-windsor-gc5JXueURQCL6WB1TEiLBWhCyEnzmq.png"
+    "imageUrl": "https://jyqmtgapu0ynowxs.public.blob.vercel-storage.com/data/venues/images/st-george%27s-chapel-windsor.png"
   },
   {
     "id": "6",
@@ -45,7 +45,7 @@
     "address": "Deangate, York YO1 7HH",
     "website": "https://yorkminster.org/",
     "timezone": "Europe/London",
-    "imageUrl": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/york-minster-nOHPXTNTWzxhRWHhxhBVZBQxTMxgzN.jpg"
+    "imageUrl": "https://jyqmtgapu0ynowxs.public.blob.vercel-storage.com/data/venues/images/york.png"
   },
   {
     "id": "7",
@@ -53,7 +53,7 @@
     "address": "Minster Yard N, Beverley HU17 0DP",
     "website": "https://beverleyminster.org.uk/",
     "timezone": "Europe/London",
-    "imageUrl": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/beverley-minster-Ue5Ue5Ue5Ue5Ue5Ue5Ue5Ue5Ue5Ue5.jpg"
+    "imageUrl": "https://jyqmtgapu0ynowxs.public.blob.vercel-storage.com/data/venues/images/beverly.png"
   },
   {
     "id": "8",
@@ -61,7 +61,7 @@
     "address": "Victoria Street, London SW1P 1LT",
     "website": "https://www.westminstercathedral.org.uk/",
     "timezone": "Europe/London",
-    "imageUrl": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/westminster-cathedral-Ue5Ue5Ue5Ue5Ue5Ue5Ue5Ue5Ue5Ue5.jpg"
+    "imageUrl": "https://jyqmtgapu0ynowxs.public.blob.vercel-storage.com/data/venues/images/westminster.png"
   },
   {
     "id": "9",
