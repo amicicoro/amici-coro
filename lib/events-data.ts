@@ -6,6 +6,34 @@ import venuesData from "@/data/venues.json"
 
 export const venues: Venue[] = venuesData
 
+export async function getEventById(id: string): Promise<Event | null> {
+  try {
+    const { blobs } = await list({
+      prefix: `data/events/${id}.json`,
+    })
+
+    const eventBlob = blobs.find((blob) => blob.pathname.endsWith(`${id}.json`))
+
+    if (!eventBlob) {
+      return null
+    }
+
+    const response = await fetch(eventBlob.url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch event data from ${eventBlob.url}`)
+    }
+
+    const eventData = await response.json()
+    return {
+      ...eventData,
+      id,
+    }
+  } catch (error) {
+    console.error(`Error fetching event ${id} from blob storage:`, error)
+    return null
+  }
+}
+
 export async function getAllEvents(): Promise<Event[]> {
    try {
       // List all blobs with events prefix

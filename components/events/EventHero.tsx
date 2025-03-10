@@ -7,6 +7,7 @@ interface EventHeroProps {
 }
 
 export function EventHero({ event, isPastEvent = false }: EventHeroProps) {
+    console.log(event);
   return (
     <div className="relative w-full h-[50vh] md:h-[60vh] lg:h-[70vh]">
       <Image

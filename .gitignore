@@ -2,3 +2,4 @@
 /.next/
 /.yarn/
 .env.local
+.idea

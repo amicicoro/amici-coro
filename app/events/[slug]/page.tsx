@@ -16,6 +16,7 @@ export default function EventPage({ params }: { params: { slug: string } }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+
   useEffect(() => {
     const fetchEvent = async () => {
       try {
