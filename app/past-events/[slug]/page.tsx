@@ -71,7 +71,7 @@ export default function PastEventPage() {
       <Header />
 
       <main className="flex-1">
-        <EventHero event={event} isPastEvent={true} />
+        <EventHero event={event} venue={event?.venue} isPastEvent={true} />
 
         <div className="container mx-auto px-6 sm:px-8 md:px-12 py-12">
           <div className="max-w-6xl mx-auto">

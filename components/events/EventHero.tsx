@@ -3,15 +3,15 @@ import type { Event } from "@/types/event"
 
 interface EventHeroProps {
   event: Event
+  venue: Venue
   isPastEvent?: boolean
 }
 
-export function EventHero({ event, isPastEvent = false }: EventHeroProps) {
-    console.log(event);
+export function EventHero({ event, venue, isPastEvent = false }: EventHeroProps) {
   return (
     <div className="relative w-full h-[50vh] md:h-[60vh] lg:h-[70vh]">
       <Image
-        src={event.imageUrl || "/placeholder.svg"}
+        src={venue.imageUrl || "/placeholder.svg"}
         alt={`${event.title} event`}
         fill
         className="object-cover"

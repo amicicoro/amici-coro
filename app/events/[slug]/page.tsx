@@ -70,7 +70,7 @@ export default function EventPage({ params }: { params: { slug: string } }) {
       <Header />
 
       <main className="flex-1">
-        <EventHero event={event} />
+        <EventHero event={event} venue={event?.venue} />
 
         <div className="container mx-auto px-6 sm:px-8 md:px-12 py-12">
           <div className="max-w-4xl mx-auto">
