@@ -1,3 +1,4 @@
+import { list } from "@vercel/blob"
 import { promises as fs } from "fs"
 import path from "path"
 import type { Event, Venue } from "@/types/event"
@@ -6,28 +7,35 @@ import venuesData from "@/data/venues.json"
 export const venues: Venue[] = venuesData
 
 export async function getAllEvents(): Promise<Event[]> {
-  // Get events from the main events directory
-  const eventsDirectory = path.join(process.cwd(), "data/events")
+   try {
+      // List all blobs with events prefix
+      const { blobs } = await list({
+            prefix: "data/events/", // Adjust this prefix based on your blob storage structure
+          });
 
-  let eventFiles: string[] = []
-  let pastEventFiles: string[] = []
+      // Process each blob to get event data
+      const events = await Promise.all(
+        blobs
+          .filter((blob) => blob.pathname.endsWith(".json"))
+          .map(async (blob) => {
+            const response = await fetch(blob.url)
+            if (!response.ok) {
+              throw new Error(`Failed to fetch event data from ${blob.url}`)
+            }
+            const eventData = await response.json()
+            return {
+              ...eventData,
+              id: blob.pathname.split("/").pop()?.replace(".json", "") || "",
+            }
+          }),
+      )
 
-  try {
-    eventFiles = await fs.readdir(eventsDirectory)
-  } catch (error) {
-    console.error("Error reading events directory:", error)
-  }
-
-  // Load events from both directories
-  const events = await Promise.all([
-    ...eventFiles.map(async (filename) => {
-      const filePath = path.join(eventsDirectory, filename)
-      const fileContents = await fs.readFile(filePath, "utf8")
-      return JSON.parse(fileContents) as Event
-    })
-  ])
-
-  return events
+      // Sort events by date (most recent first)
+      return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    } catch (error) {
+      console.error("Error fetching events from blob storage:", error)
+      return []
+    }
 }
 
 export function getEventWithVenue(event: Event): Event & { venue: Venue } {
