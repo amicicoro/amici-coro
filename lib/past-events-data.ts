@@ -5,9 +5,6 @@ import { venues, getPastEvents } from "./events-data"
 
 // This function is kept for backward compatibility
 export async function getAllPastEvents(): Promise<Event[]> {
-  try {
-    const pastEventsDirectory = path.join(process.cwd(), "data/past-events")
-    const pastEventFiles = await fs.readdir(pastEventsDirectory)
 
     const pastEvents = await Promise.all(
       pastEventFiles.map(async (filename) => {

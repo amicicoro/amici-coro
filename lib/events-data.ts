@@ -8,7 +8,6 @@ export const venues: Venue[] = venuesData
 export async function getAllEvents(): Promise<Event[]> {
   // Get events from the main events directory
   const eventsDirectory = path.join(process.cwd(), "data/events")
-  const pastEventsDirectory = path.join(process.cwd(), "data/past-events")
 
   let eventFiles: string[] = []
   let pastEventFiles: string[] = []
@@ -19,24 +18,13 @@ export async function getAllEvents(): Promise<Event[]> {
     console.error("Error reading events directory:", error)
   }
 
-  try {
-    pastEventFiles = await fs.readdir(pastEventsDirectory)
-  } catch (error) {
-    console.error("Error reading past events directory:", error)
-  }
-
   // Load events from both directories
   const events = await Promise.all([
     ...eventFiles.map(async (filename) => {
       const filePath = path.join(eventsDirectory, filename)
       const fileContents = await fs.readFile(filePath, "utf8")
       return JSON.parse(fileContents) as Event
-    }),
-    ...pastEventFiles.map(async (filename) => {
-      const filePath = path.join(pastEventsDirectory, filename)
-      const fileContents = await fs.readFile(filePath, "utf8")
-      return JSON.parse(fileContents) as Event
-    }),
+    })
   ])
 
   return events
