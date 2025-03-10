@@ -25,7 +25,6 @@ export function Header() {
             ["Home", "/"],
             ["Events", "/events"],
             ["Past Events", "/past-events"],
-            ["Venues", "/venues"],
             ["Join the Choir", "/join-the-choir"],
             ["Director of Music", "/director-of-music"],
           ].map(([title, url]) => (
