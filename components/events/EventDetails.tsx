@@ -1,6 +1,7 @@
-import { Calendar, MapPin, Clock, Music } from "lucide-react"
-import type { Event, Venue } from "@/types/event"
+import { Calendar, MapPin, Clock, Music } from 'lucide-react'
+import type { Event, Venue, MusicItem as MusicItemType } from "@/types/event"
 import { formatScheduleDateTime } from "@/lib/date-utils"
+import { MusicItem } from "./MusicItem"
 
 interface EventDetailsProps {
   event: Event & { venue: Venue }
@@ -103,10 +104,10 @@ export function EventDetails({ event, isPastEvent }: EventDetailsProps) {
           {Object.entries(event.musicList).map(([service, pieces]) => (
             <div key={service} className="space-y-2">
               <h4 className="font-medium text-lg">{service}</h4>
-              <ul className="list-disc list-inside space-y-1">
+              <ul className="space-y-1 pl-4">
                 {pieces.map((piece, index) => (
-                  <li key={index} className="text-gray-700">
-                    {piece}
+                  <li key={index} className="list-item">
+                    <MusicItem item={piece} />
                   </li>
                 ))}
               </ul>
@@ -117,4 +118,3 @@ export function EventDetails({ event, isPastEvent }: EventDetailsProps) {
     </div>
   )
 }
-
