@@ -90,17 +90,17 @@ export async function createEvent(event: Event): Promise<Event> {
     const eventJson = JSON.stringify(eventData, null, 2)
 
     // Write the new event to blob storage (using unversioned filename for new events)
-    const result = await put(`data/events/${event.id}/event.json`, eventJson, {
+    const result = await put(`data/events/${event.slug}/event.json`, eventJson, {
       contentType: "application/json",
       access: "public", // Add this line to make the blob publicly accessible
     })
 
-    console.log(`Created new event: ${event.id}`)
+    console.log(`Created new event: ${event.slug}`)
 
     // Return the created event
     return event
   } catch (error) {
-    console.error(`Error creating event ${event.id}:`, error)
+    console.error(`Error creating event ${event.slug}:`, error)
     throw error
   }
 }
@@ -198,7 +198,7 @@ export async function updateEvent(event: Event): Promise<Event> {
 
     // Get all versions of this event
     const { blobs } = await list({
-      prefix: `data/events/${event.id}/`,
+      prefix: `data/events/${event.slug}/`,
     })
 
     // Filter for event files (both versioned and unversioned)
@@ -230,17 +230,17 @@ export async function updateEvent(event: Event): Promise<Event> {
     const eventJson = JSON.stringify(eventData, null, 2)
 
     // Write the new version to blob storage
-    const result = await put(`data/events/${event.id}/${newFilename}`, eventJson, {
+    const result = await put(`data/events/${event.slug}/${newFilename}`, eventJson, {
       contentType: "application/json",
       access: "public", // Add this line to make the blob publicly accessible
     })
 
-    console.log(`Updated event ${event.id} to version ${newVersion}`)
+    console.log(`Updated event ${event.slug} to version ${newVersion}`)
 
     // Return the updated event
     return event
   } catch (error) {
-    console.error(`Error updating event ${event.id}:`, error)
+    console.error(`Error updating event ${event.slug}:`, error)
     throw error
   }
 }
@@ -249,7 +249,7 @@ export function getEventWithVenue(event: Event): Event & { venue: Venue } {
   // Use synchronous function since we're using static venue data
   const venue = getVenueById(event.venueId)
   if (!venue) {
-    throw new Error(`Venue not found for event: ${event.id}`)
+    throw new Error(`Venue not found for event: ${event.slug}`)
   }
   return { ...event, venue }
 }
