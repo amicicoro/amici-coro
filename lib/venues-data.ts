@@ -1,4 +1,4 @@
-import type { Venue } from "@/types/venue"
+import type { Venue } from "@/types/event"
 import venuesData from "@/data/venues.json"
 
 // Export the venues data directly

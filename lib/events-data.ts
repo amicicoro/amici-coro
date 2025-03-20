@@ -1,6 +1,5 @@
 import { list, put } from "@vercel/blob"
-import type { Event } from "@/types/event"
-import type { Venue } from "@/types/venue"
+import type { Event, Venue } from "@/types/event"
 import { getVenueById } from "./venues-data"
 
 // Helper function to extract version number from filename
@@ -93,6 +92,7 @@ export async function createEvent(event: Event): Promise<Event> {
     // Write the new event to blob storage (using unversioned filename for new events)
     const result = await put(`data/events/${event.id}/event.json`, eventJson, {
       contentType: "application/json",
+      access: "public", // Add this line to make the blob publicly accessible
     })
 
     console.log(`Created new event: ${event.id}`)
@@ -232,6 +232,7 @@ export async function updateEvent(event: Event): Promise<Event> {
     // Write the new version to blob storage
     const result = await put(`data/events/${event.id}/${newFilename}`, eventJson, {
       contentType: "application/json",
+      access: "public", // Add this line to make the blob publicly accessible
     })
 
     console.log(`Updated event ${event.id} to version ${newVersion}`)
