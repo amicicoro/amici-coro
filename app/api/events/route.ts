@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     const eventData = await request.json()
+    console.log("Received event data:", eventData)
 
     // Generate a unique ID if not provided
     if (!eventData.id) {
@@ -42,6 +43,16 @@ export async function POST(request: NextRequest) {
       if (!eventData[field]) {
         return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 })
       }
+    }
+
+    // Ensure schedule is an array
+    if (!eventData.schedule) {
+      eventData.schedule = []
+    }
+
+    // Ensure musicList is an object
+    if (!eventData.musicList) {
+      eventData.musicList = {}
     }
 
     // Create the event using the real data function

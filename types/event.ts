@@ -14,7 +14,7 @@ export interface Event {
   venueId: string
   slug: string
   description: string
-  schedule: {
+  schedule?: {
     date: string
     description: string
   }[]
