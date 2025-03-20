@@ -55,13 +55,19 @@ export async function getEventById(id: string): Promise<Event | null> {
 
     const response = await fetch(mostRecentEventBlob.url)
     if (!response.ok) {
-      throw new Error(`Failed to fetch event data from ${mostRecentEventBlob.url}`)
+      console.error(`Failed to fetch event data: ${response.status} ${response.statusText}`)
+      return null
     }
 
-    const eventData = await response.json()
-    return {
-      ...eventData,
-      id,
+    try {
+      const eventData = await response.json()
+      return {
+        ...eventData,
+        id,
+      }
+    } catch (parseError) {
+      console.error(`Error parsing JSON for event ${id}:`, parseError)
+      return null
     }
   } catch (error) {
     console.error(`Error fetching event ${id} from blob storage:`, error)
@@ -105,6 +111,12 @@ export async function getAllEvents(): Promise<Event[]> {
       prefix: "data/events/",
     })
 
+    // If no blobs are found, return an empty array
+    if (!blobs || blobs.length === 0) {
+      console.log("No event blobs found in storage")
+      return []
+    }
+
     // Group blobs by event ID
     const eventBlobsMap = new Map<string, any[]>()
 
@@ -124,31 +136,53 @@ export async function getAllEvents(): Promise<Event[]> {
       }
     })
 
+    // If no valid event blobs were found, return an empty array
+    if (eventBlobsMap.size === 0) {
+      console.log("No valid event files found in storage")
+      return []
+    }
+
     // Process each event, using the most recent version
     const events = await Promise.all(
       Array.from(eventBlobsMap.entries()).map(async ([eventId, eventBlobs]) => {
-        const mostRecentBlob = getMostRecentEventFile(eventBlobs)
-        if (!mostRecentBlob) {
-          throw new Error(`No valid event file found for event: ${eventId}`)
-        }
+        try {
+          const mostRecentBlob = getMostRecentEventFile(eventBlobs)
+          if (!mostRecentBlob) {
+            console.warn(`No valid event file found for event: ${eventId}`)
+            return null
+          }
 
-        const response = await fetch(mostRecentBlob.url)
-        if (!response.ok) {
-          throw new Error(`Failed to fetch event data from ${mostRecentBlob.url}`)
-        }
+          const response = await fetch(mostRecentBlob.url)
+          if (!response.ok) {
+            console.error(`Failed to fetch event data: ${response.status} ${response.statusText}`)
+            return null
+          }
 
-        const eventData = await response.json()
-        return {
-          ...eventData,
-          id: eventId,
+          try {
+            const eventData = await response.json()
+            return {
+              ...eventData,
+              id: eventId,
+            }
+          } catch (parseError) {
+            console.error(`Error parsing JSON for event ${eventId}:`, parseError)
+            return null
+          }
+        } catch (error) {
+          console.error(`Error processing event ${eventId}:`, error)
+          return null
         }
       }),
     )
 
+    // Filter out null values (failed events) and sort by date
+    const validEvents = events.filter((event): event is Event => event !== null)
+
     // Sort events by date (most recent first)
-    return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    return validEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
   } catch (error) {
     console.error("Error fetching events from blob storage:", error)
+    // Return an empty array instead of throwing to prevent page crashes
     return []
   }
 }
@@ -219,26 +253,36 @@ export function getEventWithVenue(event: Event): Event & { venue: Venue } {
 }
 
 export async function getUpcomingEvents(): Promise<(Event & { venue: Venue })[]> {
-  const events = await getAllEvents()
-  const now = new Date()
+  try {
+    const events = await getAllEvents()
+    const now = new Date()
 
-  const upcomingEvents = events
-    .filter((event) => new Date(event.endDate) >= now)
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    const upcomingEvents = events
+      .filter((event) => new Date(event.endDate) >= now)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
-  // Use synchronous mapping since getEventWithVenue is now synchronous
-  return upcomingEvents.map(getEventWithVenue)
+    // Use synchronous mapping since getEventWithVenue is now synchronous
+    return upcomingEvents.map(getEventWithVenue)
+  } catch (error) {
+    console.error("Error fetching upcoming events:", error)
+    return []
+  }
 }
 
 export async function getPastEvents(): Promise<(Event & { venue: Venue })[]> {
-  const events = await getAllEvents()
-  const now = new Date()
+  try {
+    const events = await getAllEvents()
+    const now = new Date()
 
-  const pastEvents = events
-    .filter((event) => new Date(event.endDate) < now)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) // Note: reverse chronological order
+    const pastEvents = events
+      .filter((event) => new Date(event.endDate) < now)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) // Note: reverse chronological order
 
-  // Use synchronous mapping since getEventWithVenue is now synchronous
-  return pastEvents.map(getEventWithVenue)
+    // Use synchronous mapping since getEventWithVenue is now synchronous
+    return pastEvents.map(getEventWithVenue)
+  } catch (error) {
+    console.error("Error fetching past events:", error)
+    return []
+  }
 }
 

@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import { Button } from "@/components/ui/Button"
+import { Button } from "@/components/ui/button"
 import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
 import { ImageAssets } from "@/lib/image-assets"
@@ -35,7 +35,7 @@ export default function Home() {
                     </Button>
                   </Link>
                   <Link href="/join-the-choir">
-                    <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10">
+                    <Button size="lg" variant="outline" className="bg-transparent hover:text-accent-foreground border-2 border-white text-white hover:bg-white/10">
                       Join the Choir
                     </Button>
                   </Link>

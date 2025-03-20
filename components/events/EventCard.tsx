@@ -2,7 +2,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Calendar, MapPin } from "lucide-react"
 import type { Event, Venue } from "@/types/event"
-import { Button } from "@/components/ui/Button"
+import { Button } from "@/components/ui/button"
 
 interface EventCardProps {
   event: Event & { venue: Venue }

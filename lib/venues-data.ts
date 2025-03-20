@@ -6,8 +6,8 @@ export const venues: Venue[] = venuesData
 
 export async function getAllVenues(): Promise<Venue[]> {
   try {
-    // For now, return the static data
-    return venues
+    // Return the static data sorted alphabetically by name
+    return [...venues].sort((a, b) => a.name.localeCompare(b.name))
   } catch (error) {
     console.error("Error fetching venues:", error)
     return []

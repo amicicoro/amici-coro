@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { Search } from "lucide-react"
-import { Button } from "@/components/ui/Button"
+import { Button } from "@/components/ui/button"
 
 interface EventFiltersProps {
   onSearch: (term: string) => void
