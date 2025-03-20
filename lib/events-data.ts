@@ -1,6 +1,4 @@
 import { list } from "@vercel/blob"
-import { promises as fs } from "fs"
-import path from "path"
 import type { Event, Venue } from "@/types/event"
 import venuesData from "@/data/venues.json"
 
@@ -9,10 +7,10 @@ export const venues: Venue[] = venuesData
 export async function getEventById(id: string): Promise<Event | null> {
   try {
     const { blobs } = await list({
-      prefix: `data/events/${id}.json`,
+      prefix: `data/events/${id}/event.json`,
     })
 
-    const eventBlob = blobs.find((blob) => blob.pathname.endsWith(`${id}.json`))
+    const eventBlob = blobs.find((blob) => blob.pathname.endsWith(`${id}/event.json`))
 
     if (!eventBlob) {
       return null
@@ -35,35 +33,40 @@ export async function getEventById(id: string): Promise<Event | null> {
 }
 
 export async function getAllEvents(): Promise<Event[]> {
-   try {
-      // List all blobs with events prefix
-      const { blobs } = await list({
-            prefix: "data/events/", // Adjust this prefix based on your blob storage structure
-          });
+  try {
+    // List all blobs with events prefix
+    const { blobs } = await list({
+      prefix: "data/events/", // Adjust this prefix based on your blob storage structure
+    })
 
-      // Process each blob to get event data
-      const events = await Promise.all(
-        blobs
-          .filter((blob) => blob.pathname.endsWith(".json"))
-          .map(async (blob) => {
-            const response = await fetch(blob.url)
-            if (!response.ok) {
-              throw new Error(`Failed to fetch event data from ${blob.url}`)
-            }
-            const eventData = await response.json()
-            return {
-              ...eventData,
-              id: blob.pathname.split("/").pop()?.replace(".json", "") || "",
-            }
-          }),
-      )
+    // Process each blob to get event data
+    const events = await Promise.all(
+      blobs
+        .filter((blob) => blob.pathname.endsWith("/event.json"))
+        .map(async (blob) => {
+          const response = await fetch(blob.url)
+          if (!response.ok) {
+            throw new Error(`Failed to fetch event data from ${blob.url}`)
+          }
+          const eventData = await response.json()
 
-      // Sort events by date (most recent first)
-      return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    } catch (error) {
-      console.error("Error fetching events from blob storage:", error)
-      return []
-    }
+          // Extract the event ID from the path (now it's the directory name)
+          const pathParts = blob.pathname.split("/")
+          const eventId = pathParts[pathParts.length - 2] // Get the directory name
+
+          return {
+            ...eventData,
+            id: eventId,
+          }
+        }),
+    )
+
+    // Sort events by date (most recent first)
+    return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  } catch (error) {
+    console.error("Error fetching events from blob storage:", error)
+    return []
+  }
 }
 
 export function getEventWithVenue(event: Event): Event & { venue: Venue } {

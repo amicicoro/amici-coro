@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { Header } from "@/components/layout/Header"
@@ -11,16 +11,16 @@ import { PhotoGallery } from "@/components/PhotoGallery"
 import type { Event } from "@/types/event"
 import { EventHero } from "@/components/events/EventHero"
 
-export default function EventPage({ params }: { params: { slug: string } }) {
+export default function EventPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params)
   const [event, setEvent] = useState<Event | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-
   useEffect(() => {
     const fetchEvent = async () => {
       try {
-        const res = await fetch(`/api/events/${params.slug}`)
+        const res = await fetch(`/api/events/${slug}`)
         if (!res.ok) {
           throw new Error("Failed to fetch event")
         }
@@ -34,7 +34,7 @@ export default function EventPage({ params }: { params: { slug: string } }) {
     }
 
     fetchEvent()
-  }, [params.slug])
+  }, [slug])
 
   if (isLoading) {
     return (
@@ -95,4 +95,3 @@ export default function EventPage({ params }: { params: { slug: string } }) {
     </div>
   )
 }
-
