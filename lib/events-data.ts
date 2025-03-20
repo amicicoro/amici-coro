@@ -1,5 +1,6 @@
 import { list, put } from "@vercel/blob"
-import type { Event, Venue } from "@/types/event"
+import type { Event } from "@/types/event"
+import type { Venue } from "@/types/venue"
 import { getVenueById } from "./venues-data"
 
 // Helper function to extract version number from filename

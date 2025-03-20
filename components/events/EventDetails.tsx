@@ -1,5 +1,6 @@
 import { Calendar, MapPin, Clock, Music } from 'lucide-react'
-import type { Event, Venue, MusicItem as MusicItemType } from "@/types/event"
+import type { Event, MusicItem as MusicItemType } from "@/types/event"
+import type { Venue } from "@/types/venue"
 import { formatScheduleDateTime } from "@/lib/date-utils"
 import { MusicItem } from "./MusicItem"
 

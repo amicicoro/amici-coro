@@ -6,7 +6,8 @@ import { Footer } from "@/components/layout/Footer"
 import { EventCard } from "@/components/events/EventCard"
 import { EventsHero } from "@/components/events/EventsHero"
 import { EventFilters } from "@/components/events/EventFilters"
-import type { Event, Venue } from "@/types/event"
+import type { Event } from "@/types/event"
+import type { Venue } from "@/types/venue"
 
 export default function EventsPage() {
   const [events, setEvents] = useState<(Event & { venue: Venue })[]>([])
