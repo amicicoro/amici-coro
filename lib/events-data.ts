@@ -85,12 +85,26 @@ export async function getEventById(id: string): Promise<Event | null> {
   }
 }
 
+// In the createEvent function, add a check to ensure the ID is valid for blob storage
 export async function createEvent(event: Event): Promise<Event> {
   try {
     // Check if the event already exists
     const existingEvent = await getEventById(event.id)
     if (existingEvent) {
       throw new Error(`Event already exists: ${event.id}`)
+    }
+
+    // Ensure the ID is valid for blob storage (no spaces, special characters)
+    const safeId = event.id
+      .toLowerCase()
+      .replace(/[^\w-]/g, "-") // Replace any non-word chars (except hyphens) with hyphens
+      .replace(/-+/g, "-") // Replace multiple hyphens with a single hyphen
+      .replace(/^-|-$/g, "") // Remove leading and trailing hyphens
+
+    if (safeId !== event.id) {
+      console.log(`Sanitized event ID from "${event.id}" to "${safeId}" for blob storage compatibility`)
+      event.id = safeId
+      event.slug = safeId // Update slug to match the sanitized ID
     }
 
     // Prepare the event data (remove id as it's in the path)

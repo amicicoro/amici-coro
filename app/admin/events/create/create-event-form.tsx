@@ -117,15 +117,22 @@ export default function CreateEventForm() {
     setIsLoading(true)
     setFormError(null)
 
-    // Prepare the event data
+    // Generate a slug if not provided
+    const eventSlug =
+      slug ||
+      title
+        .toLowerCase()
+        .replace(/[^\w\s]/gi, "")
+        .replace(/\s+/g, "-")
+
     const eventData: Event = {
-      id: `event-${Date.now()}`, // Generate a unique ID
+      id: eventSlug, // Use the slug as the ID
       title,
       subtitle,
       date,
       endDate,
       venueId,
-      slug,
+      slug: eventSlug, // Ensure slug is set
       description,
       schedule: scheduleItems.map((item) => ({ date: item.date, description: item.description })),
       musicList: musicListItems.reduce((acc: { [key: string]: MusicItem[] }, service) => {
