@@ -37,9 +37,13 @@ function getMostRecentEventFile(blobs: any[]) {
 
 export async function getEventById(id: string): Promise<Event | null> {
   try {
+    console.log(`Looking for event with ID: ${id}`)
+
     const { blobs } = await list({
       prefix: `data/events/${id}/`,
     })
+
+    console.log(`Found ${blobs.length} blobs for event ID: ${id}`)
 
     // Filter for event files (both versioned and unversioned)
     const eventBlobs = blobs.filter((blob) => {
@@ -47,11 +51,16 @@ export async function getEventById(id: string): Promise<Event | null> {
       return filename === "event.json" || filename.match(/event-v\d+\.json/)
     })
 
+    console.log(`Found ${eventBlobs.length} event files for event ID: ${id}`)
+
     const mostRecentEventBlob = getMostRecentEventFile(eventBlobs)
 
     if (!mostRecentEventBlob) {
+      console.log(`No valid event file found for event ID: ${id}`)
       return null
     }
+
+    console.log(`Using event file: ${mostRecentEventBlob.pathname}`)
 
     const response = await fetch(mostRecentEventBlob.url)
     if (!response.ok) {
@@ -61,6 +70,7 @@ export async function getEventById(id: string): Promise<Event | null> {
 
     try {
       const eventData = await response.json()
+      console.log(`Successfully parsed event data for ID: ${id}`)
       return {
         ...eventData,
         id,
@@ -90,17 +100,17 @@ export async function createEvent(event: Event): Promise<Event> {
     const eventJson = JSON.stringify(eventData, null, 2)
 
     // Write the new event to blob storage (using unversioned filename for new events)
-    const result = await put(`data/events/${event.slug}/event.json`, eventJson, {
+    const result = await put(`data/events/${event.id}/event.json`, eventJson, {
       contentType: "application/json",
       access: "public", // Add this line to make the blob publicly accessible
     })
 
-    console.log(`Created new event: ${event.slug}`)
+    console.log(`Created new event: ${event.id}`)
 
     // Return the created event
     return event
   } catch (error) {
-    console.error(`Error creating event ${event.slug}:`, error)
+    console.error(`Error creating event ${event.id}:`, error)
     throw error
   }
 }
@@ -198,14 +208,18 @@ export async function updateEvent(event: Event): Promise<Event> {
 
     // Get all versions of this event
     const { blobs } = await list({
-      prefix: `data/events/${event.slug}/`,
+      prefix: `data/events/${event.id}/`,
     })
+
+    console.log(`Found ${blobs.length} blobs for event ID: ${event.id}`)
 
     // Filter for event files (both versioned and unversioned)
     const eventBlobs = blobs.filter((blob) => {
       const filename = blob.pathname.split("/").pop() || ""
       return filename === "event.json" || filename.match(/event-v\d+\.json/)
     })
+
+    console.log(`Found ${eventBlobs.length} event files for event ID: ${event.id}`)
 
     // Determine the highest current version number
     let highestVersion = 0
@@ -219,6 +233,7 @@ export async function updateEvent(event: Event): Promise<Event> {
 
     // Create a new version number
     const newVersion = highestVersion + 1
+    console.log(`Creating new version ${newVersion} for event ID: ${event.id}`)
 
     // Create the new filename
     const newFilename = `event-v${newVersion}.json`
@@ -230,17 +245,23 @@ export async function updateEvent(event: Event): Promise<Event> {
     const eventJson = JSON.stringify(eventData, null, 2)
 
     // Write the new version to blob storage
-    const result = await put(`data/events/${event.slug}/${newFilename}`, eventJson, {
-      contentType: "application/json",
-      access: "public", // Add this line to make the blob publicly accessible
-    })
+    try {
+      const result = await put(`data/events/${event.id}/${newFilename}`, eventJson, {
+        contentType: "application/json",
+        access: "public", // Add this line to make the blob publicly accessible
+      })
 
-    console.log(`Updated event ${event.slug} to version ${newVersion}`)
+      console.log(`Successfully updated event ${event.id} to version ${newVersion}`)
+      console.log(`Blob URL: ${result.url}`)
+    } catch (putError) {
+      console.error(`Error writing to blob storage for event ${event.id}:`, putError)
+      throw putError
+    }
 
     // Return the updated event
     return event
   } catch (error) {
-    console.error(`Error updating event ${event.slug}:`, error)
+    console.error(`Error updating event ${event.id}:`, error)
     throw error
   }
 }
@@ -249,7 +270,7 @@ export function getEventWithVenue(event: Event): Event & { venue: Venue } {
   // Use synchronous function since we're using static venue data
   const venue = getVenueById(event.venueId)
   if (!venue) {
-    throw new Error(`Venue not found for event: ${event.slug}`)
+    throw new Error(`Venue not found for event: ${event.id}`)
   }
   return { ...event, venue }
 }

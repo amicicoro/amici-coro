@@ -1,8 +1,8 @@
 "use client"
 
-import React from "react"
+import type React from "react"
 
-import { useState, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,43 +10,62 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { VenueSelector } from "@/components/venue-selector"
-import { ImportEventDialog } from "./import-event-dialog"
-// Add these imports at the top with the other imports
-import { MoveUp, MoveDown, Music, Plus, Edit, ChevronDown, ChevronRight, ChevronUp } from 'lucide-react'
+import { Music, Plus, Edit, ChevronDown, ChevronRight, ChevronUp, MoveUp, MoveDown } from "lucide-react"
 import type { Event, MusicItem } from "@/types/event"
 import type { Venue } from "@/types/venue"
 
-// Mock venues data - replace with API call later
+// Update imports at the top to include the date utils
+import { formatDateForInput, parseInputDate, extractTimeForInput, combineDateAndTime } from "@/lib/date-utils"
+
+// Music types for dropdown
 const MUSIC_TYPES = ["Responses", "Psalm", "Magnificat", "Nunc Dimittis", "Anthem"]
 
-export default function CreateEventForm() {
+interface EditEventFormProps {
+  event: Event
+}
+
+export default function EditEventForm({ event }: EditEventFormProps) {
+  // Remove the local formatDateForInput function and use the imported one
+
   const router = useRouter()
-  const [title, setTitle] = useState("")
-  const [subtitle, setSubtitle] = useState("")
-  const [date, setDate] = useState("")
-  const [endDate, setEndDate] = useState("")
-  const [venueId, setVenueId] = useState("")
-  const [slug, setSlug] = useState("")
-  const [description, setDescription] = useState("")
-  const [scheduleItems, setScheduleItems] = useState<{ date: string; time: string; description: string }[]>([])
-  const [musicListItems, setMusicListItems] = useState<{ service: string; items: MusicItem[] }[]>([])
+  const [title, setTitle] = useState(event.title)
+  const [subtitle, setSubtitle] = useState(event.subtitle || "")
+  // Update the state initialization to use the imported function
+  const [date, setDate] = useState(formatDateForInput(event.date, event.venue?.timezone || "Europe/London"))
+  const [endDate, setEndDate] = useState(formatDateForInput(event.endDate, event.venue?.timezone || "Europe/London"))
+  const [venueId, setVenueId] = useState(event.venueId)
+  const [slug, setSlug] = useState(event.slug)
+  const [description, setDescription] = useState(event.description)
+  // Update the scheduleItems state initialization to extract time from date
+  const [scheduleItems, setScheduleItems] = useState<{ date: string; time: string; description: string }[]>(
+    event.schedule?.map((item) => ({
+      date: formatDateForInput(item.date, event.venue?.timezone || "Europe/London"),
+      time: extractTimeForInput(item.date, event.venue?.timezone || "Europe/London"),
+      description: item.description,
+    })) || [],
+  )
+
+  // Convert musicList object to array format for the form
+  const [musicListItems, setMusicListItems] = useState<{ category: string; items: MusicItem[] }[]>(
+    Object.entries(event.musicList || {}).map(([category, items]) => ({
+      category,
+      items: items || [],
+    })),
+  )
+
   const [venues, setVenues] = useState<Venue[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [musicTypeOpen, setMusicTypeOpen] = useState<{ [key: string]: boolean }>({})
 
-  // New state for tracking expanded/collapsed music items
+  // State for expanded/collapsed sections
+  const [expandedCategories, setExpandedCategories] = useState<{ [key: number]: boolean }>({})
   const [expandedServices, setExpandedServices] = useState<{ [key: number]: boolean }>({})
-  const [editingItem, setEditingItem] = useState<{ serviceIndex: number; itemIndex: number } | null>(null)
-
-  // Add a new state for tracking expanded services
-  const [expandedServiceDetails, setExpandedServiceDetails] = useState<{ [key: number]: boolean }>({})
-
-  // Add a new state to track the focused service
+  const [editingItem, setEditingItem] = useState<{ categoryIndex: number; itemIndex: number } | null>(null)
   const [focusedServiceIndex, setFocusedServiceIndex] = useState<number | null>(null)
 
   // Fetch venues on mount
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchVenues = async () => {
       try {
         const response = await fetch("/api/venues")
@@ -62,101 +81,79 @@ export default function CreateEventForm() {
     }
 
     fetchVenues()
-  }, [])
 
-  // Function to handle importing event data
-  const handleImport = useCallback((eventData: Partial<Event>) => {
-    setTitle(eventData.title || "")
-    setSubtitle(eventData.subtitle || "")
-    setDate(eventData.date || "")
-    setEndDate(eventData.endDate || "")
-    setVenueId(eventData.venueId || "")
-    setSlug(eventData.slug || "")
-    setDescription(eventData.description || "")
-
-    // Reset schedule and music list
-    setScheduleItems([])
-    setMusicListItems([])
-    setExpandedServices({})
-    setEditingItem(null)
-
-    // Process schedule items if they exist
-    if (eventData.schedule && eventData.schedule.length > 0) {
-      const formattedSchedule = eventData.schedule.map((item) => ({
-        date: item.date,
-        time: "", // Time is not in the Event type but is in the form
-        description: item.description,
-      }))
-      setScheduleItems(formattedSchedule)
+    // Initialize expanded states
+    if (musicListItems.length > 0) {
+      setExpandedServices({ 0: true })
+      setExpandedCategories({ 0: true })
     }
+  }, [musicListItems.length])
 
-    // Process music list items if they exist
-    if (eventData.musicList && Object.keys(eventData.musicList).length > 0) {
-      console.log("Processing imported music list:", eventData.musicList)
-
-      // Convert the musicList object to the array format expected by the form
-      const formattedMusicList = Object.entries(eventData.musicList).map(([service, items]) => ({
-        service,
-        items: items || [],
-      }))
-
-      console.log("Formatted music list for form:", formattedMusicList)
-      setMusicListItems(formattedMusicList)
-
-      // Expand the first service by default
-      if (formattedMusicList.length > 0) {
-        setExpandedServices({ 0: true })
-        setExpandedServiceDetails({ 0: true }) // Expand the first service by default
-      }
-    }
-  }, [])
-
-  // Function to handle form submission
+  // Update the handleSubmit function to combine date and time
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setFormError(null)
 
+    const timezone = event.venue?.timezone || "Europe/London"
+
     // Prepare the event data
-    const eventData: Event = {
-      id: `event-${Date.now()}`, // Generate a unique ID
+    const updatedEvent: Event = {
+      id: event.id,
       title,
       subtitle,
-      date,
-      endDate,
+      date: parseInputDate(date, timezone),
+      endDate: parseInputDate(endDate, timezone),
       venueId,
       slug,
       description,
-      schedule: scheduleItems.map((item) => ({ date: item.date, description: item.description })),
-      musicList: musicListItems.reduce((acc: { [key: string]: MusicItem[] }, service) => {
-        acc[service.service] = service.items
+      schedule: scheduleItems.map((item) => ({
+        // Combine date and time if time is provided
+        date: combineDateAndTime(item.date, item.time, timezone),
+        description: item.description,
+      })),
+      musicList: musicListItems.reduce((acc: { [key: string]: MusicItem[] }, category) => {
+        acc[category.category] = category.items
         return acc
       }, {}),
     }
 
     try {
-      // Call the API to create the event
-      const response = await fetch("/api/events", {
-        method: "POST",
+      console.log("Submitting update for event:", updatedEvent)
+
+      // Call the API to update the event
+      const response = await fetch(`/api/events/${event.slug}`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           "X-Admin-Auth-Token": localStorage.getItem("adminAuthToken") || "", // Get token from localStorage
         },
-        body: JSON.stringify(eventData),
+        body: JSON.stringify(updatedEvent),
       })
 
+      // Get the response text first for debugging
+      const responseText = await response.text()
+      console.log("Response from API:", responseText)
+
+      // Try to parse the response as JSON
+      let responseData
+      try {
+        responseData = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error("Error parsing response:", parseError)
+        throw new Error(`Invalid response from server: ${responseText.substring(0, 100)}...`)
+      }
+
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to create event")
+        throw new Error(responseData.error || `Failed to update event: ${response.status} ${response.statusText}`)
       }
 
       // Redirect to the admin dashboard
       router.push("/admin")
     } catch (err) {
-      console.error("Error creating event:", err)
-      setFormError(err instanceof Error ? err.message : "Failed to create event")
-    } finally {
-      setIsLoading(false)
+      console.error("Error updating event:", err)
+      setFormError(err instanceof Error ? err.message : "Failed to update event")
+      setIsLoading(false) // Make sure to set loading to false on error
     }
   }
 
@@ -178,129 +175,129 @@ export default function CreateEventForm() {
   }
 
   // Music Functions
-  const addMusicService = () => {
+  const addMusicCategory = () => {
     const newIndex = musicListItems.length
-    setMusicListItems([...musicListItems, { service: "", items: [{ title: "", composer: "", type: "" }] }])
-    // Expand the newly added service
-    setExpandedServices((prev) => ({ ...prev, [newIndex]: true }))
-    // Set the first item of the new service as being edited
-    setEditingItem({ serviceIndex: newIndex, itemIndex: 0 })
+    setMusicListItems([...musicListItems, { category: "", items: [{ title: "", composer: "", type: "" }] }])
+    // Expand the newly added category
+    setExpandedCategories((prev) => ({ ...prev, [newIndex]: true }))
+    // Set the first item of the new category as being edited
+    setEditingItem({ categoryIndex: newIndex, itemIndex: 0 })
   }
 
-  const removeMusicService = (serviceIndex: number) => {
+  const removeMusicCategory = (categoryIndex: number) => {
     const newMusicListItems = [...musicListItems]
-    newMusicListItems.splice(serviceIndex, 1)
+    newMusicListItems.splice(categoryIndex, 1)
     setMusicListItems(newMusicListItems)
 
-    // Update expanded services
-    const newExpandedServices = { ...expandedServices }
-    delete newExpandedServices[serviceIndex]
+    // Update expanded categories
+    const newExpandedCategories = { ...expandedCategories }
+    delete newExpandedCategories[categoryIndex]
 
-    // Shift keys for services after the removed one
-    Object.keys(newExpandedServices).forEach((key) => {
+    // Shift keys for categories after the removed one
+    Object.keys(newExpandedCategories).forEach((key) => {
       const numKey = Number.parseInt(key)
-      if (numKey > serviceIndex) {
-        newExpandedServices[numKey - 1] = newExpandedServices[numKey]
-        delete newExpandedServices[numKey]
+      if (numKey > categoryIndex) {
+        newExpandedCategories[numKey - 1] = newExpandedCategories[numKey]
+        delete newExpandedCategories[numKey]
       }
     })
 
-    setExpandedServices(newExpandedServices)
+    setExpandedCategories(newExpandedCategories)
 
-    // Clear editing state if the service being edited was removed
-    if (editingItem && editingItem.serviceIndex === serviceIndex) {
+    // Clear editing state if the category being edited was removed
+    if (editingItem && editingItem.categoryIndex === categoryIndex) {
       setEditingItem(null)
-    } else if (editingItem && editingItem.serviceIndex > serviceIndex) {
-      // Adjust the editing index if a service before it was removed
+    } else if (editingItem && editingItem.categoryIndex > categoryIndex) {
+      // Adjust the editing index if a category before it was removed
       setEditingItem({
-        serviceIndex: editingItem.serviceIndex - 1,
+        categoryIndex: editingItem.categoryIndex - 1,
         itemIndex: editingItem.itemIndex,
       })
     }
   }
 
-  const handleMusicServiceChange = (serviceIndex: number, value: string) => {
+  const handleMusicCategoryChange = (categoryIndex: number, value: string) => {
     const newMusicListItems = [...musicListItems]
-    newMusicListItems[serviceIndex].service = value
+    newMusicListItems[categoryIndex].category = value
     setMusicListItems(newMusicListItems)
   }
 
-  const addMusicItem = (serviceIndex: number) => {
+  const addMusicItem = (categoryIndex: number) => {
     const newMusicListItems = [...musicListItems]
-    const newItemIndex = newMusicListItems[serviceIndex].items.length
-    newMusicListItems[serviceIndex].items.push({ title: "", composer: "", type: "" })
+    const newItemIndex = newMusicListItems[categoryIndex].items.length
+    newMusicListItems[categoryIndex].items.push({ title: "", composer: "", type: "" })
     setMusicListItems(newMusicListItems)
 
-    // Expand the service and set the new item as being edited
-    setExpandedServices((prev) => ({ ...prev, [serviceIndex]: true }))
-    setEditingItem({ serviceIndex, itemIndex: newItemIndex })
+    // Expand the category and set the new item as being edited
+    setExpandedCategories((prev) => ({ ...prev, [categoryIndex]: true }))
+    setEditingItem({ categoryIndex, itemIndex: newItemIndex })
   }
 
-  const removeMusicItem = (serviceIndex: number, itemIndex: number) => {
+  const removeMusicItem = (categoryIndex: number, itemIndex: number) => {
     const newMusicListItems = [...musicListItems]
-    newMusicListItems[serviceIndex].items.splice(itemIndex, 1)
+    newMusicListItems[categoryIndex].items.splice(itemIndex, 1)
     setMusicListItems(newMusicListItems)
 
     // Clear editing state if the item being edited was removed
-    if (editingItem && editingItem.serviceIndex === serviceIndex && editingItem.itemIndex === itemIndex) {
+    if (editingItem && editingItem.categoryIndex === categoryIndex && editingItem.itemIndex === itemIndex) {
       setEditingItem(null)
-    } else if (editingItem && editingItem.serviceIndex === serviceIndex && editingItem.itemIndex > itemIndex) {
+    } else if (editingItem && editingItem.categoryIndex === categoryIndex && editingItem.itemIndex > itemIndex) {
       // Adjust the editing index if an item before it was removed
       setEditingItem({
-        serviceIndex: editingItem.serviceIndex,
+        categoryIndex: editingItem.categoryIndex,
         itemIndex: editingItem.itemIndex - 1,
       })
     }
   }
 
-  const handleMusicItemChange = (serviceIndex: number, itemIndex: number, field: string, value: string) => {
+  const handleMusicItemChange = (categoryIndex: number, itemIndex: number, field: string, value: string) => {
     const newMusicListItems = [...musicListItems]
-    newMusicListItems[serviceIndex].items[itemIndex][field] = value
+    newMusicListItems[categoryIndex].items[itemIndex][field] = value
     setMusicListItems(newMusicListItems)
   }
 
-  const toggleMusicTypePopover = (serviceIndex: number, itemIndex: number, isOpen: boolean) => {
-    setMusicTypeOpen((prev) => ({ ...prev, [`${serviceIndex}-${itemIndex}`]: isOpen }))
+  const toggleMusicTypePopover = (categoryIndex: number, itemIndex: number, isOpen: boolean) => {
+    setMusicTypeOpen((prev) => ({ ...prev, [`${categoryIndex}-${itemIndex}`]: isOpen }))
   }
 
-  // Modify the toggleServiceExpanded function to also handle service expansion
-  const toggleServiceExpanded = (serviceIndex: number) => {
-    setExpandedServices((prev) => ({
+  // Toggle category expanded state
+  const toggleCategoryExpanded = (categoryIndex: number) => {
+    setExpandedCategories((prev) => ({
       ...prev,
-      [serviceIndex]: !prev[serviceIndex],
+      [categoryIndex]: !prev[categoryIndex],
     }))
   }
 
-  // Add a new function to toggle service expansion
-  const toggleServiceDetailsExpanded = (serviceIndex: number) => {
-    setExpandedServiceDetails((prev) => ({
+  // Toggle service expanded state
+  const toggleServiceExpanded = (categoryIndex: number) => {
+    setExpandedServices((prev) => ({
       ...prev,
-      [serviceIndex]: !prev[serviceIndex],
+      [categoryIndex]: !prev[categoryIndex],
     }))
   }
 
   // Set an item as being edited
-  const setItemEditing = (serviceIndex: number, itemIndex: number) => {
-    setEditingItem({ serviceIndex, itemIndex })
-    // Make sure the service is expanded
-    setExpandedServices((prev) => ({
+  const setItemEditing = (categoryIndex: number, itemIndex: number) => {
+    setEditingItem({ categoryIndex, itemIndex })
+    // Make sure the category is expanded
+    setExpandedCategories((prev) => ({
       ...prev,
-      [serviceIndex]: true,
+      [categoryIndex]: true,
     }))
   }
 
   // Check if an item is currently being edited
-  const isItemEditing = (serviceIndex: number, itemIndex: number) => {
-    return editingItem?.serviceIndex === serviceIndex && editingItem?.itemIndex === itemIndex
+  const isItemEditing = (categoryIndex: number, itemIndex: number) => {
+    return editingItem?.categoryIndex === categoryIndex && editingItem?.itemIndex === itemIndex
   }
 
   // Render a collapsed view of a music item
-  const renderCollapsedMusicItem = (item: MusicItem, serviceIndex: number, itemIndex: number) => {
+  const renderCollapsedMusicItem = (item: MusicItem, categoryIndex: number, itemIndex: number) => {
     return (
       <div
         key={itemIndex}
         className="flex items-center justify-between p-3 border rounded-md bg-muted/10 cursor-pointer hover:bg-muted/20"
-        onClick={() => setItemEditing(serviceIndex, itemIndex)}
+        onClick={() => setItemEditing(categoryIndex, itemIndex)}
       >
         <div className="flex items-center gap-2">
           <Music className="h-4 w-4 text-muted-foreground" />
@@ -315,38 +312,38 @@ export default function CreateEventForm() {
     )
   }
 
-  // Add this function inside the CreateEventForm component, after the existing handler functions
-  const moveServiceUp = (serviceIndex: number) => {
-    if (serviceIndex === 0) return // Already at the top
+  // Move service up in the list
+  const moveServiceUp = (categoryIndex: number) => {
+    if (categoryIndex === 0) return // Already at the top
 
     const newMusicListItems = [...musicListItems]
     // Swap with the item above
-    ;[newMusicListItems[serviceIndex - 1], newMusicListItems[serviceIndex]] = [
-      newMusicListItems[serviceIndex],
-      newMusicListItems[serviceIndex - 1],
+    ;[newMusicListItems[categoryIndex - 1], newMusicListItems[categoryIndex]] = [
+      newMusicListItems[categoryIndex],
+      newMusicListItems[categoryIndex - 1],
     ]
 
     setMusicListItems(newMusicListItems)
 
     // Set focus to the service that was moved (now at the new position)
-    setFocusedServiceIndex(serviceIndex - 1)
+    setFocusedServiceIndex(categoryIndex - 1)
 
     // Update expanded states to maintain the same expanded services
-    if (expandedServiceDetails[serviceIndex] || expandedServiceDetails[serviceIndex - 1]) {
-      setExpandedServiceDetails((prev) => {
+    if (expandedServices[categoryIndex] || expandedServices[categoryIndex - 1]) {
+      setExpandedServices((prev) => {
         const newState = { ...prev }
-        newState[serviceIndex - 1] = prev[serviceIndex]
-        newState[serviceIndex] = prev[serviceIndex - 1]
+        newState[categoryIndex - 1] = prev[categoryIndex]
+        newState[categoryIndex] = prev[categoryIndex - 1]
         return newState
       })
     }
 
-    // Update expanded services to maintain the same expanded services
-    if (expandedServices[serviceIndex] || expandedServices[serviceIndex - 1]) {
-      setExpandedServices((prev) => {
+    // Update expanded categories to maintain the same expanded categories
+    if (expandedCategories[categoryIndex] || expandedCategories[categoryIndex - 1]) {
+      setExpandedCategories((prev) => {
         const newState = { ...prev }
-        newState[serviceIndex - 1] = prev[serviceIndex]
-        newState[serviceIndex] = prev[serviceIndex - 1]
+        newState[categoryIndex - 1] = prev[categoryIndex]
+        newState[categoryIndex] = prev[categoryIndex - 1]
         return newState
       })
     }
@@ -354,46 +351,47 @@ export default function CreateEventForm() {
     // Update editing state if needed
     if (
       editingItem &&
-      (editingItem.serviceIndex === serviceIndex || editingItem.serviceIndex === serviceIndex - 1)
+      (editingItem.categoryIndex === categoryIndex || editingItem.categoryIndex === categoryIndex - 1)
     ) {
       setEditingItem({
-        serviceIndex: editingItem.serviceIndex === serviceIndex ? serviceIndex - 1 : serviceIndex,
+        categoryIndex: editingItem.categoryIndex === categoryIndex ? categoryIndex - 1 : categoryIndex,
         itemIndex: editingItem.itemIndex,
       })
     }
   }
 
-  const moveServiceDown = (serviceIndex: number) => {
-    if (serviceIndex === musicListItems.length - 1) return // Already at the bottom
+  // Move service down in the list
+  const moveServiceDown = (categoryIndex: number) => {
+    if (categoryIndex === musicListItems.length - 1) return // Already at the bottom
 
     const newMusicListItems = [...musicListItems]
     // Swap with the item below
-    ;[newMusicListItems[serviceIndex], newMusicListItems[serviceIndex + 1]] = [
-      newMusicListItems[serviceIndex + 1],
-      newMusicListItems[serviceIndex],
+    ;[newMusicListItems[categoryIndex], newMusicListItems[categoryIndex + 1]] = [
+      newMusicListItems[categoryIndex + 1],
+      newMusicListItems[categoryIndex],
     ]
 
     setMusicListItems(newMusicListItems)
 
     // Set focus to the service that was moved (now at the new position)
-    setFocusedServiceIndex(serviceIndex + 1)
+    setFocusedServiceIndex(categoryIndex + 1)
 
     // Update expanded states to maintain the same expanded services
-    if (expandedServiceDetails[serviceIndex] || expandedServiceDetails[serviceIndex + 1]) {
-      setExpandedServiceDetails((prev) => {
+    if (expandedServices[categoryIndex] || expandedServices[categoryIndex + 1]) {
+      setExpandedServices((prev) => {
         const newState = { ...prev }
-        newState[serviceIndex + 1] = prev[serviceIndex]
-        newState[serviceIndex] = prev[serviceIndex + 1]
+        newState[categoryIndex + 1] = prev[categoryIndex]
+        newState[categoryIndex] = prev[categoryIndex + 1]
         return newState
       })
     }
 
-    // Update expanded services to maintain the same expanded services
-    if (expandedServices[serviceIndex] || expandedServices[serviceIndex + 1]) {
-      setExpandedServices((prev) => {
+    // Update expanded categories to maintain the same expanded categories
+    if (expandedCategories[categoryIndex] || expandedCategories[categoryIndex + 1]) {
+      setExpandedCategories((prev) => {
         const newState = { ...prev }
-        newState[serviceIndex + 1] = prev[serviceIndex]
-        newState[serviceIndex] = prev[serviceIndex + 1]
+        newState[categoryIndex + 1] = prev[categoryIndex]
+        newState[categoryIndex] = prev[categoryIndex + 1]
         return newState
       })
     }
@@ -401,20 +399,20 @@ export default function CreateEventForm() {
     // Update editing state if needed
     if (
       editingItem &&
-      (editingItem.serviceIndex === serviceIndex || editingItem.serviceIndex === serviceIndex + 1)
+      (editingItem.categoryIndex === categoryIndex || editingItem.categoryIndex === categoryIndex + 1)
     ) {
       setEditingItem({
-        serviceIndex: editingItem.serviceIndex === serviceIndex ? serviceIndex + 1 : serviceIndex,
+        categoryIndex: editingItem.categoryIndex === categoryIndex ? categoryIndex + 1 : categoryIndex,
         itemIndex: editingItem.itemIndex,
       })
     }
   }
 
-  // Add a useEffect to auto-expand the focused service
-  React.useEffect(() => {
+  // Auto-expand the focused service
+  useEffect(() => {
     if (focusedServiceIndex !== null) {
       // Auto-expand the focused service
-      setExpandedServiceDetails((prev) => ({
+      setExpandedServices((prev) => ({
         ...prev,
         [focusedServiceIndex]: true,
       }))
@@ -432,10 +430,14 @@ export default function CreateEventForm() {
     <div className="container max-w-3xl py-12">
       <div className="mb-8 px-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-4xl font-bold">Create Event</h1>
-          <ImportEventDialog onImport={handleImport} />
+          <div>
+            <h1 className="text-4xl font-bold">Edit Event</h1>
+            <p className="text-muted-foreground mt-2">Update the event details below.</p>
+          </div>
+          <Button variant="outline" onClick={() => router.back()}>
+            Back to Events
+          </Button>
         </div>
-        <p className="text-muted-foreground mt-2">Fill out the form below to create a new event.</p>
       </div>
 
       <Card className="shadow-md">
@@ -508,7 +510,7 @@ export default function CreateEventForm() {
             />
           </div>
 
-          {/* Schedule Section - Apply the same fix */}
+          {/* Schedule Section */}
           <div className="p-6 border rounded-md bg-muted/20">
             <div className="flex items-center justify-between mb-2">
               <div>
@@ -517,12 +519,7 @@ export default function CreateEventForm() {
                   Optional: Add performance times. Leave empty if not applicable.
                 </p>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addScheduleItem}
-              >
+              <Button type="button" variant="outline" size="sm" onClick={addScheduleItem}>
                 Add Schedule Item
               </Button>
             </div>
@@ -536,7 +533,7 @@ export default function CreateEventForm() {
               </div>
             )}
 
-            {/* Always show the form if scheduleAddClicked is true OR if there are non-empty items */}
+            {/* Schedule items */}
             {scheduleItems.length > 0 && (
               <div className="space-y-4 mt-4">
                 {scheduleItems.map((item, index) => (
@@ -607,12 +604,7 @@ export default function CreateEventForm() {
                   Add music performed at this event, organized by service type (e.g., Evensong, Mass).
                 </p>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addMusicService}
-              >
+              <Button type="button" variant="outline" size="sm" onClick={addMusicCategory}>
                 Add Service
               </Button>
             </div>
@@ -626,14 +618,14 @@ export default function CreateEventForm() {
               </div>
             )}
 
-            {/* Always show the form if musicAddClicked is true OR if there are non-empty items */}
+            {/* Music list items */}
             {musicListItems.length > 0 && (
               <div className="space-y-6 mt-4">
-                {musicListItems.map((service, serviceIndex) => (
+                {musicListItems.map((category, categoryIndex) => (
                   <div
-                    key={serviceIndex}
+                    key={categoryIndex}
                     className={`p-4 border rounded-md bg-background transition-colors duration-300 ${
-                      focusedServiceIndex === serviceIndex ? "border-primary bg-primary/5" : ""
+                      focusedServiceIndex === categoryIndex ? "border-primary bg-primary/5" : ""
                     }`}
                   >
                     {/* Service header with expand/collapse control */}
@@ -643,28 +635,28 @@ export default function CreateEventForm() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => toggleServiceDetailsExpanded(serviceIndex)}
+                          onClick={() => toggleServiceExpanded(categoryIndex)}
                           className="p-1"
                         >
-                          {expandedServiceDetails[serviceIndex] ? (
+                          {expandedServices[categoryIndex] ? (
                             <ChevronDown className="h-4 w-4" />
                           ) : (
                             <ChevronRight className="h-4 w-4" />
                           )}
                         </Button>
                         <div className="w-full max-w-md">
-                          {expandedServiceDetails[serviceIndex] ? (
+                          {expandedServices[categoryIndex] ? (
                             <>
-                              <Label htmlFor={`service-${serviceIndex}`} className="mb-2 block">
+                              <Label htmlFor={`category-${categoryIndex}`} className="mb-2 block">
                                 Service Name <span className="text-red-500">*</span>
                               </Label>
                               <Input
-                                id={`service-${serviceIndex}`}
-                                value={service.service}
-                                onChange={(e) => handleMusicServiceChange(serviceIndex, e.target.value)}
+                                id={`category-${categoryIndex}`}
+                                value={category.category}
+                                onChange={(e) => handleMusicCategoryChange(categoryIndex, e.target.value)}
                                 placeholder="e.g., Evensong, Mass, Matins"
                               />
-                              {!service.service && service.items.some((item) => item.title) && (
+                              {!category.category && category.items.some((item) => item.title) && (
                                 <p className="text-amber-600 text-sm mt-1">
                                   Service name is required for music items to be saved.
                                 </p>
@@ -673,11 +665,11 @@ export default function CreateEventForm() {
                           ) : (
                             <div
                               className="font-medium text-lg cursor-pointer"
-                              onClick={() => toggleServiceDetailsExpanded(serviceIndex)}
+                              onClick={() => toggleServiceExpanded(categoryIndex)}
                             >
-                              {service.service || "Unnamed Service"}
+                              {category.category || "Unnamed Service"}
                               <span className="text-muted-foreground text-sm ml-2">
-                                ({service.items.length} music item{service.items.length !== 1 ? "s" : ""})
+                                ({category.items.length} music item{category.items.length !== 1 ? "s" : ""})
                               </span>
                             </div>
                           )}
@@ -690,8 +682,8 @@ export default function CreateEventForm() {
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={() => moveServiceUp(serviceIndex)}
-                            disabled={serviceIndex === 0}
+                            onClick={() => moveServiceUp(categoryIndex)}
+                            disabled={categoryIndex === 0}
                             className="h-6 w-6 p-0"
                             title="Move service up"
                           >
@@ -701,8 +693,8 @@ export default function CreateEventForm() {
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={() => moveServiceDown(serviceIndex)}
-                            disabled={serviceIndex === musicListItems.length - 1}
+                            onClick={() => moveServiceDown(categoryIndex)}
+                            disabled={categoryIndex === musicListItems.length - 1}
                             className="h-6 w-6 p-0"
                             title="Move service down"
                           >
@@ -710,16 +702,16 @@ export default function CreateEventForm() {
                           </Button>
                         </div>
 
-                        {expandedServiceDetails[serviceIndex] && (
+                        {expandedServices[categoryIndex] && (
                           <>
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={() => toggleServiceExpanded(serviceIndex)}
+                              onClick={() => toggleCategoryExpanded(categoryIndex)}
                               className="mt-6"
                             >
-                              {expandedServices[serviceIndex] ? (
+                              {expandedCategories[categoryIndex] ? (
                                 <ChevronUp className="h-4 w-4" />
                               ) : (
                                 <ChevronDown className="h-4 w-4" />
@@ -730,19 +722,19 @@ export default function CreateEventForm() {
                               variant="ghost"
                               size="sm"
                               className="text-red-500 hover:text-red-700 hover:bg-red-50 mt-6"
-                              onClick={() => removeMusicService(serviceIndex)}
+                              onClick={() => removeMusicCategory(categoryIndex)}
                             >
                               Remove Service
                             </Button>
                           </>
                         )}
-                        {!expandedServiceDetails[serviceIndex] && (
+                        {!expandedServices[categoryIndex] && (
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => removeMusicService(serviceIndex)}
+                            onClick={() => removeMusicCategory(categoryIndex)}
                           >
                             Remove
                           </Button>
@@ -751,22 +743,22 @@ export default function CreateEventForm() {
                     </div>
 
                     {/* Collapsed service view */}
-                    {!expandedServiceDetails[serviceIndex] && (
+                    {!expandedServices[categoryIndex] && (
                       <div className="pl-8">
-                        {service.items.length === 0 ? (
+                        {category.items.length === 0 ? (
                           <p className="text-muted-foreground text-sm">No music items added yet.</p>
                         ) : (
                           <div className="space-y-1">
-                            {service.items.slice(0, 3).map((item, idx) => (
+                            {category.items.slice(0, 3).map((item, idx) => (
                               <div key={idx} className="text-sm text-muted-foreground">
                                 {item.type && <span className="font-medium">{item.type}:</span>}{" "}
                                 {item.title || "Untitled"}
                                 {item.composer && <span> by {item.composer}</span>}
                               </div>
                             ))}
-                            {service.items.length > 3 && (
+                            {category.items.length > 3 && (
                               <div className="text-sm text-muted-foreground">
-                                ...and {service.items.length - 3} more item{service.items.length - 3 !== 1 ? "s" : ""}
+                                ...and {category.items.length - 3} more item{category.items.length - 3 !== 1 ? "s" : ""}
                               </div>
                             )}
                           </div>
@@ -776,8 +768,8 @@ export default function CreateEventForm() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            toggleServiceDetailsExpanded(serviceIndex)
-                            setExpandedServices((prev) => ({ ...prev, [serviceIndex]: true }))
+                            toggleServiceExpanded(categoryIndex)
+                            setExpandedCategories((prev) => ({ ...prev, [categoryIndex]: true }))
                           }}
                           className="mt-2"
                         >
@@ -787,34 +779,34 @@ export default function CreateEventForm() {
                     )}
 
                     {/* Expanded service view - only show if service is expanded */}
-                    {expandedServiceDetails[serviceIndex] && (
+                    {expandedServices[categoryIndex] && (
                       <>
-                        {expandedServices[serviceIndex] ? (
+                        {expandedCategories[categoryIndex] ? (
                           <div className="space-y-4">
-                            {service.items.map((item, itemIndex) =>
-                              isItemEditing(serviceIndex, itemIndex) ? (
+                            {category.items.map((item, itemIndex) =>
+                              isItemEditing(categoryIndex, itemIndex) ? (
                                 // Expanded edit view for the item being edited
                                 <div key={itemIndex} className="grid gap-4 p-3 border rounded-md bg-muted/10">
                                   <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                                     <div className="space-y-2">
-                                      <Label htmlFor={`type-${serviceIndex}-${itemIndex}`}>Type (Optional)</Label>
+                                      <Label htmlFor={`type-${categoryIndex}-${itemIndex}`}>Type (Optional)</Label>
                                       <div className="relative">
                                         <Input
-                                          id={`type-${serviceIndex}-${itemIndex}`}
+                                          id={`type-${categoryIndex}-${itemIndex}`}
                                           value={item.type}
                                           onChange={(e) =>
-                                            handleMusicItemChange(serviceIndex, itemIndex, "type", e.target.value)
+                                            handleMusicItemChange(categoryIndex, itemIndex, "type", e.target.value)
                                           }
                                           placeholder="Start typing or select..."
-                                          onFocus={() => toggleMusicTypePopover(serviceIndex, itemIndex, true)}
+                                          onFocus={() => toggleMusicTypePopover(categoryIndex, itemIndex, true)}
                                           onBlur={() =>
                                             setTimeout(
-                                              () => toggleMusicTypePopover(serviceIndex, itemIndex, false),
+                                              () => toggleMusicTypePopover(categoryIndex, itemIndex, false),
                                               200,
                                             )
                                           }
                                         />
-                                        {musicTypeOpen[`${serviceIndex}-${itemIndex}`] && (
+                                        {musicTypeOpen[`${categoryIndex}-${itemIndex}`] && (
                                           <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
                                             {MUSIC_TYPES.filter((type) =>
                                               type.toLowerCase().includes(item.type?.toLowerCase() || ""),
@@ -823,8 +815,8 @@ export default function CreateEventForm() {
                                                 key={type}
                                                 className="px-3 py-2 cursor-pointer hover:bg-muted"
                                                 onMouseDown={() => {
-                                                  handleMusicItemChange(serviceIndex, itemIndex, "type", type)
-                                                  toggleMusicTypePopover(serviceIndex, itemIndex, false)
+                                                  handleMusicItemChange(categoryIndex, itemIndex, "type", type)
+                                                  toggleMusicTypePopover(categoryIndex, itemIndex, false)
                                                 }}
                                               >
                                                 {type}
@@ -837,28 +829,28 @@ export default function CreateEventForm() {
 
                                     {/* Title field - give it more space on medium screens */}
                                     <div className="space-y-2 md:col-span-2 lg:col-span-1">
-                                      <Label htmlFor={`title-${serviceIndex}-${itemIndex}`}>
+                                      <Label htmlFor={`title-${categoryIndex}-${itemIndex}`}>
                                         Title <span className="text-red-500">*</span>
                                       </Label>
                                       <Input
-                                        id={`title-${serviceIndex}-${itemIndex}`}
+                                        id={`title-${categoryIndex}-${itemIndex}`}
                                         value={item.title}
                                         onChange={(e) =>
-                                          handleMusicItemChange(serviceIndex, itemIndex, "title", e.target.value)
+                                          handleMusicItemChange(categoryIndex, itemIndex, "title", e.target.value)
                                         }
                                         placeholder="e.g., Magnificat"
                                       />
                                     </div>
 
                                     <div className="space-y-2">
-                                      <Label htmlFor={`composer-${serviceIndex}-${itemIndex}`}>
+                                      <Label htmlFor={`composer-${categoryIndex}-${itemIndex}`}>
                                         Composer (Optional)
                                       </Label>
                                       <Input
-                                        id={`composer-${serviceIndex}-${itemIndex}`}
+                                        id={`composer-${categoryIndex}-${itemIndex}`}
                                         value={item.composer}
                                         onChange={(e) =>
-                                          handleMusicItemChange(serviceIndex, itemIndex, "composer", e.target.value)
+                                          handleMusicItemChange(categoryIndex, itemIndex, "composer", e.target.value)
                                         }
                                         placeholder="e.g., Stanford"
                                       />
@@ -879,56 +871,54 @@ export default function CreateEventForm() {
                                       >
                                         Done
                                       </Button>
-                                      {service.items.length > 1 && (
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="sm"
-                                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                          onClick={() => removeMusicItem(serviceIndex, itemIndex)}
-                                        >
-                                          Remove Item
-                                        </Button>
-                                      )}
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                        onClick={() => removeMusicItem(categoryIndex, itemIndex)}
+                                      >
+                                        Remove Item
+                                      </Button>
                                     </div>
                                   </div>
                                 </div>
                               ) : (
                                 // Collapsed view for items not being edited
-                                renderCollapsedMusicItem(item, serviceIndex, itemIndex)
+                                renderCollapsedMusicItem(item, categoryIndex, itemIndex)
                               ),
                             )}
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
-                              onClick={() => addMusicItem(serviceIndex)}
+                              onClick={() => addMusicItem(categoryIndex)}
                               className="mt-2"
                             >
                               Add Music Item
                             </Button>
                           </div>
                         ) : (
-                          // Collapsed view for the service
+                          // Collapsed view for the category
                           <div className="space-y-2">
-                            {service.items.length === 0 ? (
+                            {category.items.length === 0 ? (
                               <p className="text-muted-foreground text-sm">No music items added yet.</p>
                             ) : (
                               <div className="space-y-2">
-                                {service.items
+                                {category.items
                                   .slice(0, 2)
-                                  .map((item, itemIndex) => renderCollapsedMusicItem(item, serviceIndex, itemIndex))}
-                                {service.items.length > 2 && (
+                                  .map((item, itemIndex) => renderCollapsedMusicItem(item, categoryIndex, itemIndex))}
+                                {category.items.length > 2 && (
                                   <Button
                                     type="button"
                                     variant="ghost"
                                     size="sm"
                                     className="w-full text-muted-foreground"
-                                    onClick={() => toggleServiceExpanded(serviceIndex)}
+                                    onClick={() => toggleCategoryExpanded(categoryIndex)}
                                   >
                                     <span className="flex items-center gap-1">
                                       <ChevronDown className="h-4 w-4" />
-                                      {service.items.length - 2} more items
+                                      {category.items.length - 2} more items
                                     </span>
                                   </Button>
                                 )}
@@ -939,8 +929,8 @@ export default function CreateEventForm() {
                               variant="outline"
                               size="sm"
                               onClick={() => {
-                                addMusicItem(serviceIndex)
-                                toggleServiceExpanded(serviceIndex)
+                                addMusicItem(categoryIndex)
+                                toggleCategoryExpanded(categoryIndex)
                               }}
                               className="mt-2 flex items-center gap-1"
                             >
@@ -957,7 +947,7 @@ export default function CreateEventForm() {
             {/* Add a button to add another service at the bottom of the music list section */}
             {musicListItems.length > 0 && (
               <div className="mt-4 flex justify-center">
-                <Button type="button" variant="outline" onClick={() => addMusicService()} className="gap-2">
+                <Button type="button" variant="outline" onClick={() => addMusicCategory()} className="gap-2">
                   <Plus className="h-4 w-4" />
                   Add Another Service
                 </Button>
@@ -980,10 +970,10 @@ export default function CreateEventForm() {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                Creating...
+                Updating...
               </>
             ) : (
-              "Create Event"
+              "Update Event"
             )}
           </Button>
         </div>

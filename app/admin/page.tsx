@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Pagination,
@@ -15,9 +15,11 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { format } from "date-fns"
-import { Plus, AlertCircle, Calendar, MapPin, ExternalLink, Clock } from "lucide-react"
+import { Plus, Calendar, MapPin } from "lucide-react"
 import { LogoutButton } from "@/components/logout-button"
+import { EventsList } from "@/components/admin/events-list"
+import { VenueCard } from "@/components/admin/venue-card"
+import { ErrorMessage } from "@/components/admin/error-message"
 import type { Event } from "@/types/event"
 import type { Venue } from "@/types/venue"
 
@@ -94,8 +96,7 @@ export default function AdminDashboardPage() {
     setIsLoading(false)
   }
 
-  // For venues, we'll show 12 per page (4 rows of 3 columns) - doubled from previous 6
-  // This ensures complete rows on all screen sizes
+  // For venues, we'll show 12 per page (4 rows of 3 columns)
   const venuesPerPage = 12
   const totalVenuePages = Math.ceil(venues.length / venuesPerPage)
 
@@ -149,146 +150,16 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Upcoming Events Section */}
-          <div className="mb-10">
-            <div className="flex items-center gap-2 mb-4">
-              <Calendar className="h-5 w-5 text-green-600" />
-              <h3 className="text-xl font-medium">Upcoming Events</h3>
-            </div>
-
-            {eventsError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg mb-6">
-                <div className="flex items-center">
-                  <AlertCircle className="h-5 w-5 mr-2" />
-                  {eventsError}
-                </div>
-              </div>
-            )}
-
-            <div className="grid gap-6">
-              {!eventsError && upcomingEvents.length === 0 ? (
-                <Card className="shadow-md">
-                  <CardContent className="pt-10 pb-10">
-                    <p className="text-center text-muted-foreground text-lg">
-                      No upcoming events found. Create your first event!
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                upcomingEvents.map((event) => (
-                  <Card
-                    key={event.id}
-                    className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200"
-                  >
-                    <CardHeader className="pb-3 pt-6 px-6">
-                      <div className="flex justify-between items-start gap-4">
-                        <div className="space-y-1">
-                          <CardTitle className="text-2xl">{event.title}</CardTitle>
-                          {event.subtitle && <p className="text-sm text-muted-foreground">{event.subtitle}</p>}
-                          <CardDescription className="text-base mt-2">
-                            {format(new Date(event.date), "PPP")}
-                            {event.date !== event.endDate && ` - ${format(new Date(event.endDate), "PPP")}`}
-                          </CardDescription>
-                        </div>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div>
-                                <Button variant="outline" disabled className="cursor-not-allowed">
-                                  <span className="flex items-center">Edit</span>
-                                </Button>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Edit functionality coming soon</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="px-6 pb-6">
-                      <p className="text-muted-foreground line-clamp-2 mb-4">
-                        {event.description || "No description provided"}
-                      </p>
-                      <div className="flex items-center text-sm text-green-600">
-                        <span className="mr-2 h-3 w-3 rounded-full bg-green-500" />
-                        Upcoming
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
-          </div>
+          <EventsList
+            title="Upcoming Events"
+            icon="calendar"
+            events={upcomingEvents}
+            type="upcoming"
+            error={eventsError}
+          />
 
           {/* Past Events Section */}
-          <div className="mt-12">
-            <div className="flex items-center gap-2 mb-4">
-              <Clock className="h-5 w-5 text-gray-500" />
-              <h3 className="text-xl font-medium">Past Events</h3>
-            </div>
-
-            {pastEventsError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg mb-6">
-                <div className="flex items-center">
-                  <AlertCircle className="h-5 w-5 mr-2" />
-                  {pastEventsError}
-                </div>
-              </div>
-            )}
-
-            <div className="grid gap-6">
-              {!pastEventsError && pastEvents.length === 0 ? (
-                <Card className="shadow-md">
-                  <CardContent className="pt-10 pb-10">
-                    <p className="text-center text-muted-foreground text-lg">No past events found.</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                pastEvents.map((event) => (
-                  <Card
-                    key={event.id}
-                    className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200 border-gray-200"
-                  >
-                    <CardHeader className="pb-3 pt-6 px-6">
-                      <div className="flex justify-between items-start gap-4">
-                        <div className="space-y-1">
-                          <CardTitle className="text-2xl">{event.title}</CardTitle>
-                          {event.subtitle && <p className="text-sm text-muted-foreground">{event.subtitle}</p>}
-                          <CardDescription className="text-base mt-2">
-                            {format(new Date(event.date), "PPP")}
-                            {event.date !== event.endDate && ` - ${format(new Date(event.endDate), "PPP")}`}
-                          </CardDescription>
-                        </div>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div>
-                                <Button variant="outline" disabled className="cursor-not-allowed">
-                                  <span className="flex items-center">Edit</span>
-                                </Button>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Edit functionality coming soon</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="px-6 pb-6">
-                      <p className="text-muted-foreground line-clamp-2 mb-4">
-                        {event.description || "No description provided"}
-                      </p>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <span className="mr-2 h-3 w-3 rounded-full bg-gray-400" />
-                        Past
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
-          </div>
+          <EventsList title="Past Events" icon="clock" events={pastEvents} type="past" error={pastEventsError} />
         </TabsContent>
 
         {/* Venues Tab */}
@@ -311,14 +182,7 @@ export default function AdminDashboardPage() {
             </TooltipProvider>
           </div>
 
-          {venuesError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg mb-6">
-              <div className="flex items-center">
-                <AlertCircle className="h-5 w-5 mr-2" />
-                {venuesError}
-              </div>
-            </div>
-          )}
+          <ErrorMessage message={venuesError} />
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {!venuesError && venues.length === 0 ? (
@@ -328,47 +192,7 @@ export default function AdminDashboardPage() {
                 </CardContent>
               </Card>
             ) : (
-              currentPageVenues.map((venue) => (
-                <Card
-                  key={venue.id}
-                  className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200"
-                >
-                  <div className="aspect-video bg-muted relative overflow-hidden">
-                    <img
-                      src={venue.imageUrl || "/placeholder.svg?height=200&width=400"}
-                      alt={venue.name}
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-xl">{venue.name}</CardTitle>
-                    <CardDescription className="line-clamp-1">{venue.address}</CardDescription>
-                  </CardHeader>
-                  <CardFooter className="flex justify-between pt-0">
-                    {venue.website && (
-                      <Button variant="outline" size="sm" asChild className="gap-1">
-                        <a href={venue.website} target="_blank" rel="noopener noreferrer">
-                          Website <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </Button>
-                    )}
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div>
-                            <Button variant="outline" size="sm" disabled className="cursor-not-allowed">
-                              Edit
-                            </Button>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Edit functionality coming soon</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </CardFooter>
-                </Card>
-              ))
+              currentPageVenues.map((venue) => <VenueCard key={venue.id} venue={venue} />)
             )}
           </div>
 

@@ -12,7 +12,7 @@ interface EventCardProps {
 
 export function EventCard({ event, isPastEvent = false }: EventCardProps) {
   const timezone = event.venue?.timezone || "Europe/London" // Default to London if no timezone is specified
-
+  const title = `${event.title} ${event.subtitle}`;
   const formatEventDate = (startDate: string, endDate: string) => {
     const start = new Date(startDate)
     const end = new Date(endDate)
