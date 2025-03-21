@@ -12,7 +12,7 @@ interface EventCardProps {
 
 export function EventCard({ event, isPastEvent = false }: EventCardProps) {
   const timezone = event.venue?.timezone || "Europe/London" // Default to London if no timezone is specified
-  const title = `${event.title} ${event.subtitle}`;
+  const title = event.subtitle ? `${event.title} ${event.subtitle}` : event.title
   const formatEventDate = (startDate: string, endDate: string) => {
     const start = new Date(startDate)
     const end = new Date(endDate)
@@ -51,14 +51,14 @@ export function EventCard({ event, isPastEvent = false }: EventCardProps) {
       <div className="relative aspect-[3/2] w-full">
         <Image
           src={event.venue.imageUrl || "/placeholder.svg"}
-          alt={event.title}
+          alt={title}
           fill
           className="object-cover object-center"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
       </div>
       <div className="p-5 flex flex-col flex-grow">
-        <h3 className="text-xl font-playfair mb-2">{event.title}</h3>
+        <h3 className="text-xl font-playfair mb-2">{title}</h3>
         <p className="text-sm text-gray-600 mb-2 flex items-center">
           <Calendar className="w-4 h-4 mr-2" />
           {formatEventDate(event.date, event.endDate)}
