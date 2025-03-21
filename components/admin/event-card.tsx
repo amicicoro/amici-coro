@@ -21,8 +21,10 @@ export function EventCard({ event, type }: EventCardProps) {
       <CardHeader className="pb-3 pt-6 px-6">
         <div className="flex justify-between items-start gap-4">
           <div className="space-y-1">
-            <CardTitle className="text-2xl">{event.title}</CardTitle>
-            {event.subtitle && <p className="text-base font-medium text-primary mt-1">{event.subtitle}</p>}
+            <div className="flex flex-wrap items-baseline gap-2">
+              <CardTitle className="text-2xl">{event.title}</CardTitle>
+              {event.subtitle && <span className="text-base font-medium text-primary">{event.subtitle}</span>}
+            </div>
             <CardDescription className="text-base mt-2">
               {format(new Date(event.date), "PPP")}
               {event.date !== event.endDate && ` - ${format(new Date(event.endDate), "PPP")}`}
@@ -43,7 +45,6 @@ export function EventCard({ event, type }: EventCardProps) {
         </div>
       </CardHeader>
       <CardContent className="px-6 pb-6">
-        <p className="text-muted-foreground line-clamp-2 mb-4">{event.description || "No description provided"}</p>
         <div className={`flex items-center text-sm ${isUpcoming ? "text-green-600" : "text-gray-500"}`}>
           <span className={`mr-2 h-3 w-3 rounded-full ${isUpcoming ? "bg-green-500" : "bg-gray-400"}`} />
           {isUpcoming ? "Upcoming" : "Past"}

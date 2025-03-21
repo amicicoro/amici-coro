@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { VenueSelector } from "@/components/venue-selector"
 import { ImportEventDialog } from "./import-event-dialog"
 // Add these imports at the top with the other imports
-import { MoveUp, MoveDown, Music, Plus, Edit, ChevronDown, ChevronRight, ChevronUp } from 'lucide-react'
+import { MoveUp, MoveDown, Music, Plus, Edit, ChevronDown, ChevronRight, ChevronUp } from "lucide-react"
 import type { Event, MusicItem } from "@/types/event"
 import type { Venue } from "@/types/venue"
 
@@ -352,10 +352,7 @@ export default function CreateEventForm() {
     }
 
     // Update editing state if needed
-    if (
-      editingItem &&
-      (editingItem.serviceIndex === serviceIndex || editingItem.serviceIndex === serviceIndex - 1)
-    ) {
+    if (editingItem && (editingItem.serviceIndex === serviceIndex || editingItem.serviceIndex === serviceIndex - 1)) {
       setEditingItem({
         serviceIndex: editingItem.serviceIndex === serviceIndex ? serviceIndex - 1 : serviceIndex,
         itemIndex: editingItem.itemIndex,
@@ -399,10 +396,7 @@ export default function CreateEventForm() {
     }
 
     // Update editing state if needed
-    if (
-      editingItem &&
-      (editingItem.serviceIndex === serviceIndex || editingItem.serviceIndex === serviceIndex + 1)
-    ) {
+    if (editingItem && (editingItem.serviceIndex === serviceIndex || editingItem.serviceIndex === serviceIndex + 1)) {
       setEditingItem({
         serviceIndex: editingItem.serviceIndex === serviceIndex ? serviceIndex + 1 : serviceIndex,
         itemIndex: editingItem.itemIndex,
@@ -432,10 +426,17 @@ export default function CreateEventForm() {
     <div className="container max-w-3xl py-12">
       <div className="mb-8 px-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-4xl font-bold">Create Event</h1>
-          <ImportEventDialog onImport={handleImport} />
+          <div>
+            <h1 className="text-4xl font-bold">Create Event</h1>
+            <p className="text-muted-foreground mt-2">Fill out the form below to create a new event.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => router.back()}>
+              Back to Events
+            </Button>
+            <ImportEventDialog onImport={handleImport} />
+          </div>
         </div>
-        <p className="text-muted-foreground mt-2">Fill out the form below to create a new event.</p>
       </div>
 
       <Card className="shadow-md">
@@ -517,12 +518,7 @@ export default function CreateEventForm() {
                   Optional: Add performance times. Leave empty if not applicable.
                 </p>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addScheduleItem}
-              >
+              <Button type="button" variant="outline" size="sm" onClick={addScheduleItem}>
                 Add Schedule Item
               </Button>
             </div>
@@ -607,12 +603,7 @@ export default function CreateEventForm() {
                   Add music performed at this event, organized by service type (e.g., Evensong, Mass).
                 </p>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addMusicService}
-              >
+              <Button type="button" variant="outline" size="sm" onClick={addMusicService}>
                 Add Service
               </Button>
             </div>
