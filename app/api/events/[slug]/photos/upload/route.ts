@@ -4,7 +4,22 @@ import { uploadEventPhoto } from "@/lib/events-data"
 export const runtime = "edge"
 
 // List of supported image MIME types
-const SUPPORTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "image/svg+xml"]
+const SUPPORTED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/svg+xml",
+  "image/heic",
+  "image/heif",
+  "application/octet-stream", // Some browsers send HEIC files with this MIME type
+]
+
+// Helper function to check if a file is likely a HEIC file by name
+function isLikelyHeicFile(file: File): boolean {
+  return file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")
+}
 
 export async function POST(request: Request, { params }: { params: { slug: string } }) {
   const { slug } = params
@@ -24,11 +39,11 @@ export async function POST(request: Request, { params }: { params: { slug: strin
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
-    // Check if the file type is supported
-    if (!SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) {
+    // Check if the file type is supported or if it's a HEIC file by extension
+    if (!SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase()) && !isLikelyHeicFile(file)) {
       return NextResponse.json(
         {
-          error: `Unsupported file type: ${file.type || "unknown"}. Only JPEG, PNG, GIF, WebP, and SVG are supported.`,
+          error: `Unsupported file type: ${file.type || "unknown"}. Only JPEG, PNG, GIF, WebP, and HEIC are supported.`,
         },
         { status: 400 },
       )

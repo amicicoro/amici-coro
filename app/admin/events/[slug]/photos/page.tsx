@@ -125,7 +125,17 @@ export default function AdminEventPhotosPage() {
 
   // Check if a file is a supported image type
   const isFileSupported = (file: File): boolean => {
-    return SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())
+    // Check by MIME type
+    if (SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) {
+      return true
+    }
+
+    // Check by file extension for HEIC files
+    if (file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")) {
+      return true
+    }
+
+    return false
   }
 
   // Process files before adding them to the upload queue
