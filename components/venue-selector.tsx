@@ -28,7 +28,14 @@ export function VenueSelector({ venues = [], value, onChange }: VenueSelectorPro
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" role="combobox" type="button" aria-expanded={open} className="w-full justify-between">
+        <Button
+          variant="outline"
+          role="combobox"
+          type="button"
+          aria-expanded={open}
+          className="w-full justify-between"
+          data-testid="venue-selector-trigger"
+        >
           {selectedVenue ? selectedVenue.name : "Select a venue..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -41,10 +48,11 @@ export function VenueSelector({ venues = [], value, onChange }: VenueSelectorPro
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
+            data-testid="venue-search-input"
           />
         </div>
 
-        <div className="max-h-72 overflow-auto py-1">
+        <div className="max-h-72 overflow-auto py-1" data-testid="venue-options-container">
           {filteredVenues.length === 0 ? (
             <div className="py-6 text-center text-sm">No venue found.</div>
           ) : (
@@ -59,6 +67,7 @@ export function VenueSelector({ venues = [], value, onChange }: VenueSelectorPro
                   onChange(venue.id)
                   setOpen(false)
                 }}
+                data-testid={`venue-option-${venue.id}`}
               >
                 <div className="flex-shrink-0 h-8 w-8 rounded-sm overflow-hidden bg-muted">
                   <img
