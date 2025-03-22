@@ -6,11 +6,7 @@ export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   // Skip authentication for GET requests, auth-related routes, and photos endpoints
-  if (
-    request.method === "GET" || 
-    path.startsWith("/api/auth/") ||
-    path.includes("/photos")
-  ) {
+  if (request.method === "GET" || path.startsWith("/api/auth/") || path.includes("/photos")) {
     return NextResponse.next()
   }
 

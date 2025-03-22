@@ -84,7 +84,14 @@ export default function AdminEventPhotosPage() {
       }
 
       const data = await response.json()
-      setPhotos(data)
+
+      // Fix: Extract the photos array from the response
+      if (data && data.photos && Array.isArray(data.photos)) {
+        setPhotos(data.photos)
+      } else {
+        console.error("Unexpected photos data format:", data)
+        setPhotos([])
+      }
     } catch (err) {
       console.error("Error fetching photos:", err)
       setError(err instanceof Error ? err.message : "Failed to fetch photos")

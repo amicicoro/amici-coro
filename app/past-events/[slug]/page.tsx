@@ -19,7 +19,7 @@ export default function PastEventPage() {
   const [error, setError] = useState<string | null>(null)
 
   // Separate state for photos
-  const [photos, setPhotos] = useState<string[]>([])
+  const [photos, setPhotos] = useState<Array<{ url: string }>>([])
   const [photosLoading, setPhotosLoading] = useState(true)
   const [photosError, setPhotosError] = useState<string | null>(null)
 
@@ -53,7 +53,15 @@ export default function PastEventPage() {
           throw new Error("Failed to fetch photos")
         }
         const data = await response.json()
-        setPhotos(data.photos) // The API returns objects with url property
+
+        // Fix: Extract the photos array from the response
+        if (data && data.photos && Array.isArray(data.photos)) {
+          setPhotos(data.photos)
+        } else {
+          console.error("Unexpected photos data format:", data)
+          setPhotos([])
+        }
+
         setPhotosLoading(false)
       } catch (err) {
         setPhotosError(err instanceof Error ? err.message : "An error occurred")
