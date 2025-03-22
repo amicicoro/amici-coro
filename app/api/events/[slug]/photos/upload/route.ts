@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { uploadEventPhoto } from "@/lib/events-data"
 
-export const runtime = 'edge'
+export const runtime = "edge"
 
 export async function POST(request: Request, { params }: { params: { slug: string } }) {
   const { slug } = params
