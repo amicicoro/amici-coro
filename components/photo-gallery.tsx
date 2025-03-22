@@ -15,7 +15,7 @@ interface PhotoGalleryProps {
 }
 
 export function PhotoGallery({ photos, alt }: PhotoGalleryProps) {
-  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null)
+  const [currentIndex, setCurrentIndex] = useState(0)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   // Helper function to get the photo URL regardless of format
@@ -24,24 +24,16 @@ export function PhotoGallery({ photos, alt }: PhotoGalleryProps) {
   }
 
   const handleOpenPhoto = (index: number) => {
-    setSelectedPhotoIndex(index)
+    setCurrentIndex(index)
     setIsDialogOpen(true)
   }
 
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false)
-  }
-
   const handlePrevPhoto = () => {
-    if (selectedPhotoIndex !== null) {
-      setSelectedPhotoIndex((selectedPhotoIndex - 1 + photos.length) % photos.length)
-    }
+    setCurrentIndex((prevIndex) => (prevIndex - 1 + photos.length) % photos.length)
   }
 
   const handleNextPhoto = () => {
-    if (selectedPhotoIndex !== null) {
-      setSelectedPhotoIndex((selectedPhotoIndex + 1) % photos.length)
-    }
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % photos.length)
   }
 
   // Handle keyboard navigation
@@ -51,7 +43,7 @@ export function PhotoGallery({ photos, alt }: PhotoGalleryProps) {
     } else if (e.key === "ArrowRight") {
       handleNextPhoto()
     } else if (e.key === "Escape") {
-      handleCloseDialog()
+      setIsDialogOpen(false)
     }
   }
 
@@ -81,54 +73,52 @@ export function PhotoGallery({ photos, alt }: PhotoGalleryProps) {
           onKeyDown={handleKeyDown}
           onInteractOutside={(e) => e.preventDefault()}
         >
-          {selectedPhotoIndex !== null && (
-            <div className="relative h-[80vh] flex items-center justify-center">
+          <div className="relative h-[80vh] flex items-center justify-center">
+            <div className="relative w-full h-full flex items-center justify-center">
               <Image
-                src={getPhotoUrl(photos[selectedPhotoIndex]) || "/placeholder.svg"}
-                alt={`${alt} - Photo ${selectedPhotoIndex + 1}`}
+                src={getPhotoUrl(photos[currentIndex]) || "/placeholder.svg"}
+                alt={`${alt} - Photo ${currentIndex + 1}`}
                 fill
                 sizes="95vw"
                 className="object-contain"
                 priority
               />
-
-              <DialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 right-2 text-white hover:bg-black/50 z-10"
-                  onClick={handleCloseDialog}
-                >
-                  <X className="h-6 w-6" />
-                  <span className="sr-only">Close</span>
-                </Button>
-              </DialogTrigger>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute left-2 top-1/2 -translate-y-1/2 text-white hover:bg-black/50 z-10"
-                onClick={handlePrevPhoto}
-              >
-                <ChevronLeft className="h-8 w-8" />
-                <span className="sr-only">Previous photo</span>
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-white hover:bg-black/50 z-10"
-                onClick={handleNextPhoto}
-              >
-                <ChevronRight className="h-8 w-8" />
-                <span className="sr-only">Next photo</span>
-              </Button>
-
-              <div className="absolute bottom-4 left-0 right-0 text-center text-white/80 text-sm">
-                {selectedPhotoIndex + 1} of {photos.length}
-              </div>
             </div>
-          )}
+
+            {/* Close button */}
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-black/50 z-10">
+                <X className="h-6 w-6" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </DialogTrigger>
+
+            {/* Navigation buttons */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:bg-black/50 z-10 h-12 w-12 rounded-full"
+              onClick={handlePrevPhoto}
+            >
+              <ChevronLeft className="h-8 w-8" />
+              <span className="sr-only">Previous photo</span>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:bg-black/50 z-10 h-12 w-12 rounded-full"
+              onClick={handleNextPhoto}
+            >
+              <ChevronRight className="h-8 w-8" />
+              <span className="sr-only">Next photo</span>
+            </Button>
+
+            {/* Photo counter */}
+            <div className="absolute bottom-4 left-0 right-0 text-center text-white text-sm">
+              {currentIndex + 1} of {photos.length}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

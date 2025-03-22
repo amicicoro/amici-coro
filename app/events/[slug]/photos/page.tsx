@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
-import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ArrowLeft, X, ZoomIn, LayoutDashboard } from "lucide-react"
+import { ArrowLeft, LayoutDashboard } from "lucide-react"
+import { PhotoGallery } from "@/components/photo-gallery"
 
 interface Photo {
   url: string
@@ -27,6 +26,7 @@ export default function EventPhotosPage() {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
   const [event, setEvent] = useState<any>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [fitMode, setFitMode] = useState<"cover" | "contain">("contain")
 
   useEffect(() => {
     // Check if user is admin (for admin dashboard link)
@@ -53,7 +53,16 @@ export default function EventPhotosPage() {
         }
 
         const data = await response.json()
-        setPhotos(data)
+        console.log("API response:", data) // Debug log
+
+        // Fix: Extract the photos array from the response
+        if (data && data.photos && Array.isArray(data.photos)) {
+          setPhotos(data.photos)
+          console.log("Photos set:", data.photos) // Debug log
+        } else {
+          console.error("Unexpected photos data format:", data)
+          setPhotos([])
+        }
       } catch (err) {
         console.error("Error fetching photos:", err)
         setError(err instanceof Error ? err.message : "Failed to fetch photos")
@@ -111,57 +120,7 @@ export default function EventPhotosPage() {
           <p>No photos found for this event.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {photos.map((photo, index) => (
-            <Dialog key={index}>
-              <DialogTrigger asChild>
-                <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
-                  <CardContent className="p-0 relative group">
-                    <div className="relative aspect-square">
-                      <Image
-                        src={photo.url || "/placeholder.svg"}
-                        alt={`Event photo ${index + 1}`}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      />
-                    </div>
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <ZoomIn className="text-white h-8 w-8" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </DialogTrigger>
-              <DialogContent
-                className="max-w-4xl p-0 bg-transparent border-none"
-                onInteractOutside={(e) => e.preventDefault()}
-              >
-                <div className="relative">
-                  <div className="absolute top-2 right-2 z-10">
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="bg-black/50 text-white hover:bg-black/70 rounded-full"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </DialogTrigger>
-                  </div>
-                  <div className="relative h-[80vh] max-h-[80vh] w-full">
-                    <Image
-                      src={photo.url || "/placeholder.svg"}
-                      alt={`Event photo ${index + 1}`}
-                      fill
-                      className="object-contain"
-                      sizes="100vw"
-                    />
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          ))}
-        </div>
+        <PhotoGallery photos={photos} alt={event?.title || "Event"} />
       )}
     </div>
   )

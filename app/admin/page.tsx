@@ -69,7 +69,10 @@ export default function AdminDashboardPage() {
 
     try {
       // Fetch past events from the API
-      const pastEventsResponse = await fetch("/api/past-events")
+      const pastEventsResponse = await fetch("/api/past-events", {
+        cache: "no-store", // This forces a fresh request every time
+        next: { revalidate: 0 }, // This ensures the data is always fresh
+      })
       if (!pastEventsResponse.ok) {
         throw new Error("Failed to fetch past events")
       }

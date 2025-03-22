@@ -294,9 +294,18 @@ export async function getUpcomingEvents(): Promise<(Event & { venue: Venue })[]>
     const events = await getAllEvents()
     const now = new Date()
 
+    // Helper function to normalize date strings for comparison
+    const normalizeDate = (dateStr: string): Date => {
+      // If the date is just a date without time (YYYY-MM-DD), append time
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        return new Date(`${dateStr}T23:59:59Z`)
+      }
+      return new Date(dateStr)
+    }
+
     const upcomingEvents = events
-      .filter((event) => new Date(event.endDate) >= now)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .filter((event) => normalizeDate(event.endDate) >= now)
+      .sort((a, b) => normalizeDate(a.date).getTime() - normalizeDate(b.date).getTime())
 
     // Use synchronous mapping since getEventWithVenue is now synchronous
     return upcomingEvents.map(getEventWithVenue)
@@ -311,9 +320,18 @@ export async function getPastEvents(): Promise<(Event & { venue: Venue })[]> {
     const events = await getAllEvents()
     const now = new Date()
 
+    // Helper function to normalize date strings for comparison
+    const normalizeDate = (dateStr: string): Date => {
+      // If the date is just a date without time (YYYY-MM-DD), append time
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        return new Date(`${dateStr}T23:59:59Z`)
+      }
+      return new Date(dateStr)
+    }
+
     const pastEvents = events
-      .filter((event) => new Date(event.endDate) < now)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) // Note: reverse chronological order
+      .filter((event) => normalizeDate(event.endDate) < now)
+      .sort((a, b) => normalizeDate(b.date).getTime() - normalizeDate(a.date).getTime()) // Note: reverse chronological order
 
     // Use synchronous mapping since getEventWithVenue is now synchronous
     return pastEvents.map(getEventWithVenue)
@@ -440,5 +458,21 @@ export async function uploadEventPhoto(
     console.error(`Error uploading photo for event ${slug}:`, error)
     throw error
   }
+}
+
+// Add this helper function to check if an event is in the past
+export function isEventInPast(event: Event): boolean {
+  const now = new Date()
+
+  // Helper function to normalize date strings for comparison
+  const normalizeDate = (dateStr: string): Date => {
+    // If the date is just a date without time (YYYY-MM-DD), append time
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      return new Date(`${dateStr}T23:59:59Z`)
+    }
+    return new Date(dateStr)
+  }
+
+  return normalizeDate(event.endDate) < now
 }
 

@@ -39,7 +39,7 @@ export function parseInputDate(inputDate: string, timezone = "UTC"): string {
       return inputDate
     }
 
-    // Return the ISO string for storage
+    // Return the ISO string for storage with timezone information
     return date.toISOString()
   } catch (error) {
     console.error(`Error parsing input date ${inputDate}:`, error)
