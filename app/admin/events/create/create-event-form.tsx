@@ -12,9 +12,20 @@ import { Textarea } from "@/components/ui/textarea"
 import { VenueSelector } from "@/components/venue-selector"
 import { ImportEventDialog } from "./import-event-dialog"
 // Add these imports at the top with the other imports
-import { MoveUp, MoveDown, Music, Plus, Edit, ChevronDown, ChevronRight, ChevronUp } from "lucide-react"
+import {
+  MoveUp,
+  MoveDown,
+  Music,
+  Plus,
+  Edit,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  LayoutDashboard,
+} from "lucide-react"
 import type { Event, MusicItem } from "@/types/event"
 import type { Venue } from "@/types/venue"
+import Link from "next/link"
 
 // Mock venues data - replace with API call later
 const MUSIC_TYPES = ["Responses", "Psalm", "Magnificat", "Nunc Dimittis", "Anthem"]
@@ -438,8 +449,11 @@ export default function CreateEventForm() {
             <p className="text-muted-foreground mt-2">Fill out the form below to create a new event.</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => router.back()}>
-              Back to Events
+            <Button variant="outline" asChild className="gap-2">
+              <Link href="/admin">
+                <LayoutDashboard className="h-4 w-4" />
+                Back to Dashboard
+              </Link>
             </Button>
             <ImportEventDialog onImport={handleImport} />
           </div>
@@ -964,7 +978,7 @@ export default function CreateEventForm() {
           </div>
         </CardContent>
         <div className="flex justify-end space-x-2 p-6">
-          <Button variant="ghost" onClick={() => router.back()}>
+          <Button variant="ghost" onClick={() => router.push("/admin")}>
             Cancel
           </Button>
           <Button type="submit" disabled={isLoading} onClick={handleSubmit}>

@@ -1,12 +1,24 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createEvent, getUpcomingEvents } from "@/lib/events-data"
+import { createEvent, getUpcomingEvents, getEventPhotos } from "@/lib/events-data"
 import type { Event } from "@/types/event"
 
 export async function GET() {
   try {
     // Use the real data from blob storage
-    const upcomingEvents = await getUpcomingEvents()
-    return NextResponse.json(upcomingEvents)
+    const events = await getUpcomingEvents()
+
+    // Add photo counts to each event
+    const eventsWithPhotoCounts = await Promise.all(
+      events.map(async (event) => {
+        const photos = await getEventPhotos(event.id)
+        return {
+          ...event,
+          photoCount: photos.length,
+        }
+      }),
+    )
+
+    return NextResponse.json(eventsWithPhotoCounts)
   } catch (error) {
     console.error("Error fetching events:", error)
     return NextResponse.json({ error: "Failed to fetch events" }, { status: 500 })

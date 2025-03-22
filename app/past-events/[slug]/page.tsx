@@ -8,7 +8,7 @@ import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
 import { NotFoundContent } from "@/components/common/NotFoundContent"
 import { EventDetails } from "@/components/events/EventDetails"
-import { PhotoGallery } from "@/components/PhotoGallery"
+import { PhotoGallery } from "@/components/photo-gallery"
 import type { Event } from "@/types/event"
 import { EventHero } from "@/components/events/EventHero"
 
@@ -18,6 +18,12 @@ export default function PastEventPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Separate state for photos
+  const [photos, setPhotos] = useState<string[]>([])
+  const [photosLoading, setPhotosLoading] = useState(true)
+  const [photosError, setPhotosError] = useState<string | null>(null)
+
+  // Fetch event data
   useEffect(() => {
     const fetchEvent = async () => {
       try {
@@ -36,6 +42,29 @@ export default function PastEventPage() {
 
     fetchEvent()
   }, [slug])
+
+  // Fetch photos independently
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      setPhotosLoading(true)
+      try {
+        const response = await fetch(`/api/events/${slug}/photos`)
+        if (!response.ok) {
+          throw new Error("Failed to fetch photos")
+        }
+        const data = await response.json()
+        setPhotos(data.photos) // The API returns objects with url property
+        setPhotosLoading(false)
+      } catch (err) {
+        setPhotosError(err instanceof Error ? err.message : "An error occurred")
+        setPhotosLoading(false)
+      }
+    }
+
+    if (event) {
+      fetchPhotos()
+    }
+  }, [slug, event])
 
   if (isLoading) {
     return (
@@ -82,15 +111,36 @@ export default function PastEventPage() {
 
             <EventDetails event={event} isPastEvent={true} />
 
-            {event.photos && event.photos.length > 0 && (
-              <div className="mt-12">
-                <h3 className="text-xl md:text-2xl font-semibold flex items-center gap-2 mb-6">
-                  <Camera className="w-5 h-5" />
-                  <span>Event Photos</span>
-                </h3>
-                <PhotoGallery photos={event.photos} alt={event.title} />
+            {/* Photo Gallery Section - Only shown if photos exist */}
+            {photosLoading ? (
+              <div className="mt-16 pt-8 border-t border-gray-200">
+                <h2 className="text-2xl md:text-3xl font-semibold flex items-center gap-2 mb-8">
+                  <Camera className="w-6 h-6" />
+                  <span>Event Gallery</span>
+                </h2>
+                <div className="text-center py-12">
+                  <p className="text-gray-500">Loading photos...</p>
+                </div>
               </div>
-            )}
+            ) : photosError ? (
+              <div className="mt-16 pt-8 border-t border-gray-200">
+                <h2 className="text-2xl md:text-3xl font-semibold flex items-center gap-2 mb-8">
+                  <Camera className="w-6 h-6" />
+                  <span>Event Gallery</span>
+                </h2>
+                <div className="text-center py-12">
+                  <p className="text-red-500">{photosError}</p>
+                </div>
+              </div>
+            ) : photos.length > 0 ? (
+              <div className="mt-16 pt-8 border-t border-gray-200">
+                <h2 className="text-2xl md:text-3xl font-semibold flex items-center gap-2 mb-8">
+                  <Camera className="w-6 h-6" />
+                  <span>Event Gallery</span>
+                </h2>
+                <PhotoGallery photos={photos} alt={event.title} />
+              </div>
+            ) : null}
           </div>
         </div>
       </main>

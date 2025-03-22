@@ -10,9 +10,21 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { VenueSelector } from "@/components/venue-selector"
-import { Music, Plus, Edit, ChevronDown, ChevronRight, ChevronUp, MoveUp, MoveDown } from "lucide-react"
+import {
+  Music,
+  Plus,
+  Edit,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  MoveUp,
+  MoveDown,
+  Camera,
+  LayoutDashboard,
+} from "lucide-react"
 import type { Event, MusicItem } from "@/types/event"
 import type { Venue } from "@/types/venue"
+import Link from "next/link"
 
 // Update imports at the top to include the date utils
 import { formatDateForInput, parseInputDate, extractTimeForInput, combineDateAndTime } from "@/lib/date-utils"
@@ -434,9 +446,18 @@ export default function EditEventForm({ event }: EditEventFormProps) {
             <h1 className="text-4xl font-bold">Edit Event</h1>
             <p className="text-muted-foreground mt-2">Update the event details below.</p>
           </div>
-          <Button variant="outline" onClick={() => router.back()}>
-            Back to Events
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" asChild className="gap-2">
+              <Link href="/admin">
+                <LayoutDashboard className="h-4 w-4" />
+                Back to Dashboard
+              </Link>
+            </Button>
+            <Button variant="outline" className="gap-2" onClick={() => router.push(`/admin/events/${event.id}/photos`)}>
+              <Camera className="h-4 w-4" />
+              Photos
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -956,7 +977,7 @@ export default function EditEventForm({ event }: EditEventFormProps) {
           </div>
         </CardContent>
         <div className="flex justify-end space-x-2 p-6">
-          <Button variant="ghost" onClick={() => router.back()}>
+          <Button variant="ghost" onClick={() => router.push("/admin")}>
             Cancel
           </Button>
           <Button type="submit" disabled={isLoading} onClick={handleSubmit}>

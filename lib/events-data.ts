@@ -1,4 +1,4 @@
-import { list, put } from "@vercel/blob"
+import { list, put, head } from "@vercel/blob"
 import type { Event, Venue } from "@/types/event"
 import { getVenueById } from "./venues-data"
 
@@ -320,6 +320,112 @@ export async function getPastEvents(): Promise<(Event & { venue: Venue })[]> {
   } catch (error) {
     console.error("Error fetching past events:", error)
     return []
+  }
+}
+
+// Updated function to load photos for an event with proper content type handling
+export async function getEventPhotos(slug: string): Promise<{ url: string; pathname: string; contentType: string }[]> {
+  try {
+    console.log(`Fetching photos for event: ${slug}`)
+
+    // List all blobs in the photos directory for this event
+    const { blobs } = await list({
+      prefix: `data/events/${slug}/photos/`,
+    })
+
+    console.log(`Found ${blobs.length} photos for event ID: ${slug}`)
+
+    // Process each blob to get its content type using head()
+    const photoBlobs = await Promise.all(
+      blobs.map(async (blob) => {
+        try {
+          // Get the metadata for this blob using head()
+          const metadata = await head(blob.url)
+
+          // Only include image files
+          if (metadata.contentType && metadata.contentType.startsWith("image/")) {
+            return {
+              url: blob.url,
+              pathname: blob.pathname,
+              contentType: metadata.contentType,
+            }
+          }
+          return null
+        } catch (error) {
+          console.error(`Error getting metadata for blob ${blob.url}:`, error)
+          return null
+        }
+      }),
+    )
+
+    // Filter out null values (non-image files or errors)
+    return photoBlobs.filter((blob): blob is { url: string; pathname: string; contentType: string } => blob !== null)
+  } catch (error) {
+    console.error(`Error fetching photos for event ${slug}:`, error)
+    return []
+  }
+}
+
+// Add this new function to get an event by slug
+export async function getEventBySlug(slug: string): Promise<Event | null> {
+  try {
+    console.log(`Looking for event with slug: ${slug}`)
+
+    // Get all events
+    const events = await getAllEvents()
+
+    // Find the event with the matching slug
+    const event = events.find((event) => event.slug === slug)
+
+    if (!event) {
+      console.log(`No event found with slug: ${slug}`)
+      return null
+    }
+
+    console.log(`Found event with slug: ${slug}, ID: ${event.id}`)
+    return event
+  } catch (error) {
+    console.error(`Error fetching event with slug ${slug}:`, error)
+    return null
+  }
+}
+
+// Add this new function to upload a photo for an event
+export async function uploadEventPhoto(
+  slug: string,
+  file: File,
+): Promise<{ url: string; pathname: string; contentType: string }> {
+  try {
+    console.log(`Uploading photo for event with slug: ${slug}`)
+
+    // Verify the event exists
+    const event = await getEventBySlug(slug)
+    if (!event) {
+      throw new Error(`Event not found with slug: ${slug}`)
+    }
+
+    // Generate a unique filename
+    const timestamp = Date.now()
+    const filename = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "-")}`
+
+    // Upload the file to blob storage using the event slug
+    const blob = await put(`data/events/${slug}/photos/${filename}`, file, {
+      access: "public",
+      contentType: file.type,
+      cacheControl: "public, max-age=31536000", // Cache for 1 year
+    })
+
+    console.log(`Successfully uploaded photo for event ${slug}: ${blob.url}`)
+
+    // Return the blob URL and metadata
+    return {
+      url: blob.url,
+      pathname: blob.pathname,
+      contentType: blob.contentType || file.type, // Use the file's content type as a fallback
+    }
+  } catch (error) {
+    console.error(`Error uploading photo for event ${slug}:`, error)
+    throw error
   }
 }
 

@@ -7,20 +7,16 @@ export interface MusicItem {
 // Event type with the musicList structure as a map (reverted)
 export interface Event {
   id: string
+  slug: string
   title: string
-  subtitle?: string
+  description: string
   date: string
   endDate: string
+  time: string
   venueId: string
-  slug: string
-  description: string
-  schedule?: {
-    date: string
-    description: string
-  }[]
-  musicList: {
-    [key: string]: MusicItem[]
-  }
+  imageUrl?: string
+  status: "draft" | "published"
+  photoCount?: number
 }
 
 export interface Venue {

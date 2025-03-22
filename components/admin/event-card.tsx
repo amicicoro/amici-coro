@@ -3,6 +3,7 @@ import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Event } from "@/types/event"
+import { Camera } from "lucide-react"
 
 interface EventCardProps {
   event: Event
@@ -39,6 +40,14 @@ export function EventCard({ event, type }: EventCardProps) {
             <Button variant="outline" asChild>
               <Link href={`/admin/events/edit/${event.slug}`}>
                 <span className="flex items-center">Edit</span>
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href={`/admin/events/${event.slug}/photos`}>
+                <span className="flex items-center gap-1">
+                  <Camera className="h-4 w-4" />
+                  Photos
+                </span>
               </Link>
             </Button>
           </div>

@@ -5,8 +5,12 @@ export function middleware(request: NextRequest) {
   // Only protect API routes that modify data
   const path = request.nextUrl.pathname
 
-  // Skip authentication for GET requests and auth-related routes
-  if (request.method === "GET" || path.startsWith("/api/auth/")) {
+  // Skip authentication for GET requests, auth-related routes, and photos endpoints
+  if (
+    request.method === "GET" || 
+    path.startsWith("/api/auth/") ||
+    path.includes("/photos")
+  ) {
     return NextResponse.next()
   }
 

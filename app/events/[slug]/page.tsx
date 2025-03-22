@@ -1,18 +1,18 @@
 "use client"
 
-import { useState, useEffect, use } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useParams } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
 import { NotFoundContent } from "@/components/common/NotFoundContent"
 import { EventDetails } from "@/components/events/EventDetails"
-import { PhotoGallery } from "@/components/PhotoGallery"
 import type { Event } from "@/types/event"
 import { EventHero } from "@/components/events/EventHero"
 
-export default function EventPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params)
+export default function EventPage() {
+  const { slug } = useParams()
   const [event, setEvent] = useState<Event | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -81,12 +81,6 @@ export default function EventPage({ params }: { params: Promise<{ slug: string }
 
             <EventDetails event={event} isPastEvent={false} />
 
-            {event.photos && event.photos.length > 0 && (
-              <div className="mt-12">
-                <h2 className="text-2xl font-playfair mb-4">Event Photos</h2>
-                <PhotoGallery photos={event.photos} alt={event.title} />
-              </div>
-            )}
           </div>
         </div>
       </main>
