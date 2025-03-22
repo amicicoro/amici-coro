@@ -45,13 +45,15 @@ export async function convertHeicToJpeg(file: File): Promise<File> {
  * @returns A Promise that resolves to true if the file is a HEIC file
  */
 export async function isHeicFile(file: File): Promise<boolean> {
-  // Check by file extension
+  // Check by file extension first (most reliable method)
   if (file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")) {
+    console.log(`File ${file.name} identified as HEIC by extension`)
     return true
   }
 
   // Check by MIME type
   if (file.type === "image/heic" || file.type === "image/heif") {
+    console.log(`File ${file.name} identified as HEIC by MIME type: ${file.type}`)
     return true
   }
 
@@ -63,16 +65,19 @@ export async function isHeicFile(file: File): Promise<boolean> {
       .map((byte) => String.fromCharCode(byte))
       .join("")
 
-    return (
+    const isHeic =
       signature === "ftyp" &&
       Array.from(view.slice(8, 12))
         .map((byte) => String.fromCharCode(byte))
         .join("")
         .includes("heic")
-    )
+
+    console.log(`File ${file.name} header check result: ${isHeic ? "HEIC" : "not HEIC"}`)
+    return isHeic
   } catch (error) {
     console.error("Error checking file header:", error)
-    return false
+    // Fall back to extension check on error
+    return file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")
   }
 }
 

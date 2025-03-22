@@ -71,6 +71,9 @@ export default function AdminEventPhotosPage() {
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Debug state
+  const [debugInfo, setDebugInfo] = useState<string | null>(null)
+
   // Check authentication
   useEffect(() => {
     const token = localStorage.getItem("adminAuthToken")
@@ -125,91 +128,179 @@ export default function AdminEventPhotosPage() {
 
   // Check if a file is a supported image type
   const isFileSupported = (file: File): boolean => {
-    // Check by MIME type
-    if (SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) {
+    try {
+      // Check by MIME type
+      if (SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) {
+        console.log(`File ${file.name} supported by MIME type: ${file.type}`)
+        return true
+      }
+
+      // Check by file extension for HEIC files
+      if (file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")) {
+        console.log(`File ${file.name} supported by extension`)
+        return true
+      }
+
+      console.log(`File ${file.name} is not supported. MIME type: ${file.type}`)
+      return false
+    } catch (error) {
+      console.error("Error in isFileSupported:", error)
+      // Default to true to avoid blocking uploads due to detection errors
       return true
     }
-
-    // Check by file extension for HEIC files
-    if (file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")) {
-      return true
-    }
-
-    return false
   }
 
   // Process files before adding them to the upload queue
   const processFiles = async (files: File[]): Promise<PhotoPreview[]> => {
-    const processedFiles: PhotoPreview[] = []
+    try {
+      console.log(`Processing ${files.length} files`)
+      setDebugInfo(`Processing ${files.length} files`)
 
-    for (const file of files) {
-      // Create a base preview object
-      const preview = URL.createObjectURL(file)
-      const photoPreview: PhotoPreview = {
-        file,
-        preview,
-        status: "pending",
-      }
+      const processedFiles: PhotoPreview[] = []
 
-      // Check if file is supported
-      if (!isFileSupported(file)) {
-        photoPreview.status = "unsupported"
-        photoPreview.error = `Unsupported file type: ${file.type || "unknown"}`
-        processedFiles.push(photoPreview)
-        continue
-      }
+      for (const file of files) {
+        console.log(`Processing file: ${file.name}, type: ${file.type}, size: ${file.size} bytes`)
 
-      // Check if it's a HEIC file
-      const fileIsHeic = await isHeicFile(file)
-      if (fileIsHeic) {
-        photoPreview.isHeic = true
-
-        try {
-          // Try to convert HEIC to JPEG
-          console.log(`Converting HEIC file: ${file.name}`)
-          const convertedFile = await convertHeicToJpeg(file)
-          photoPreview.convertedFile = convertedFile
-          console.log(`Successfully converted ${file.name} to JPEG`)
-        } catch (err) {
-          console.error(`Failed to convert HEIC file: ${file.name}`, err)
-          photoPreview.status = "failed"
-          photoPreview.error = `Failed to convert HEIC file: ${err instanceof Error ? err.message : String(err)}`
+        // Create a base preview object
+        const preview = URL.createObjectURL(file)
+        const photoPreview: PhotoPreview = {
+          file,
+          preview,
+          status: "pending",
         }
+
+        // Check if file is supported
+        if (!isFileSupported(file)) {
+          console.log(`File ${file.name} is not supported`)
+          photoPreview.status = "unsupported"
+          photoPreview.error = `Unsupported file type: ${file.type || "unknown"}`
+          processedFiles.push(photoPreview)
+          continue
+        }
+
+        // Check if it's a HEIC file
+        let fileIsHeic = false
+        try {
+          fileIsHeic = await isHeicFile(file)
+          console.log(`HEIC detection result for ${file.name}: ${fileIsHeic}`)
+        } catch (error) {
+          console.error(`Error detecting HEIC file ${file.name}:`, error)
+          // If detection fails, check by extension as fallback
+          fileIsHeic = file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")
+        }
+
+        if (fileIsHeic) {
+          photoPreview.isHeic = true
+          console.log(`File ${file.name} is a HEIC file, will attempt conversion`)
+
+          try {
+            // Try to convert HEIC to JPEG
+            console.log(`Converting HEIC file: ${file.name}`)
+            const convertedFile = await convertHeicToJpeg(file)
+            photoPreview.convertedFile = convertedFile
+            console.log(`Successfully converted ${file.name} to JPEG (${convertedFile.size} bytes)`)
+          } catch (err) {
+            console.error(`Failed to convert HEIC file: ${file.name}`, err)
+            // Don't mark as failed, just continue without conversion
+            console.log(`Will upload original file without conversion`)
+          }
+        }
+
+        processedFiles.push(photoPreview)
       }
 
-      processedFiles.push(photoPreview)
+      console.log(`Processed ${processedFiles.length} files successfully`)
+      setDebugInfo(`Processed ${processedFiles.length} files successfully`)
+      return processedFiles
+    } catch (error) {
+      console.error("Error in processFiles:", error)
+      setDebugInfo(`Error processing files: ${error instanceof Error ? error.message : String(error)}`)
+      // Return empty array to avoid breaking the upload flow
+      return []
     }
-
-    return processedFiles
   }
 
   // Upload handlers
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return
+    try {
+      console.log("File input change event triggered")
+      setDebugInfo("File input change event triggered")
 
-    const files = Array.from(e.target.files)
+      if (!e.target.files || e.target.files.length === 0) {
+        console.log("No files selected")
+        setDebugInfo("No files selected")
+        return
+      }
 
-    // Process files (check support, convert HEIC)
-    const newPhotos = await processFiles(files)
+      console.log(`${e.target.files.length} files selected`)
+      setDebugInfo(`${e.target.files.length} files selected`)
 
-    setPhotoUploads((prev) => [...prev, ...newPhotos])
+      const files = Array.from(e.target.files)
+
+      // Process files (check support, convert HEIC)
+      const newPhotos = await processFiles(files)
+
+      if (newPhotos.length > 0) {
+        console.log(`Adding ${newPhotos.length} new photos to upload queue`)
+        setPhotoUploads((prev) => [...prev, ...newPhotos])
+        setDebugInfo(`Added ${newPhotos.length} photos to upload queue`)
+      } else {
+        console.log("No valid photos to add to upload queue")
+        setDebugInfo("No valid photos to add to upload queue")
+      }
+    } catch (error) {
+      console.error("Error in handleFileChange:", error)
+      setDebugInfo(`Error handling file selection: ${error instanceof Error ? error.message : String(error)}`)
+    }
   }
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
+    // Visual feedback for drag over
+    e.currentTarget.classList.add("border-primary")
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    // Remove visual feedback
+    e.currentTarget.classList.remove("border-primary")
   }
 
   const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault()
+    try {
+      e.preventDefault()
+      // Remove visual feedback
+      e.currentTarget.classList.remove("border-primary")
 
-    if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) return
+      console.log("Drop event triggered")
+      setDebugInfo("Drop event triggered")
 
-    const files = Array.from(e.dataTransfer.files)
+      if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) {
+        console.log("No files dropped")
+        setDebugInfo("No files dropped")
+        return
+      }
 
-    // Process files (check support, convert HEIC)
-    const newPhotos = await processFiles(files)
+      console.log(`${e.dataTransfer.files.length} files dropped`)
+      setDebugInfo(`${e.dataTransfer.files.length} files dropped`)
 
-    setPhotoUploads((prev) => [...prev, ...newPhotos])
+      const files = Array.from(e.dataTransfer.files)
+
+      // Process files (check support, convert HEIC)
+      const newPhotos = await processFiles(files)
+
+      if (newPhotos.length > 0) {
+        console.log(`Adding ${newPhotos.length} new photos to upload queue`)
+        setPhotoUploads((prev) => [...prev, ...newPhotos])
+        setDebugInfo(`Added ${newPhotos.length} photos to upload queue`)
+      } else {
+        console.log("No valid photos to add to upload queue")
+        setDebugInfo("No valid photos to add to upload queue")
+      }
+    } catch (error) {
+      console.error("Error in handleDrop:", error)
+      setDebugInfo(`Error handling dropped files: ${error instanceof Error ? error.message : String(error)}`)
+    }
   }
 
   const handleRemoveFile = (preview: string) => {
@@ -400,6 +491,18 @@ export default function AdminEventPhotosPage() {
   const unsupportedCount = photoUploads.filter((p) => p.status === "unsupported").length
   const heicCount = photoUploads.filter((p) => p.isHeic).length
 
+  // Function to manually trigger file selection
+  const triggerFileSelection = () => {
+    console.log("Manually triggering file selection")
+    setDebugInfo("Manually triggering file selection")
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
+    } else {
+      console.error("File input ref is null")
+      setDebugInfo("Error: File input reference is null")
+    }
+  }
+
   return (
     <div className="container max-w-6xl py-12">
       <div className="flex justify-between items-center mb-8 px-4">
@@ -422,6 +525,14 @@ export default function AdminEventPhotosPage() {
           </Button>
         </div>
       </div>
+
+      {/* Debug info */}
+      {debugInfo && (
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+          <h3 className="font-medium text-blue-800 mb-1">Debug Information</h3>
+          <p className="text-blue-700 text-sm">{debugInfo}</p>
+        </div>
+      )}
 
       {/* Always show upload box at the top */}
       {isAdmin && (
@@ -462,10 +573,10 @@ export default function AdminEventPhotosPage() {
 
           {/* File input area */}
           <div
-            className={`border-2 border-dashed rounded-md p-8 text-center ${isUploading ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-muted/50"} transition-colors`}
-            onClick={() => !isUploading && fileInputRef.current?.click()}
+            className="border-2 border-dashed rounded-md p-8 text-center transition-colors hover:bg-muted/50"
             onDragOver={handleDragOver}
-            onDrop={!isUploading ? handleDrop : undefined}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
           >
             <input
               type="file"
@@ -481,6 +592,17 @@ export default function AdminEventPhotosPage() {
               {isUploading ? "Upload in progress..." : "Drag and drop photos here, or click to select files"}
             </p>
             <p className="text-xs text-muted-foreground mt-1">Supported formats: JPG, PNG, GIF, WebP, HEIC</p>
+
+            {/* Add a visible button as a fallback */}
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-4"
+              onClick={triggerFileSelection}
+              disabled={isUploading}
+            >
+              Select Files
+            </Button>
           </div>
 
           {/* Upload stats */}

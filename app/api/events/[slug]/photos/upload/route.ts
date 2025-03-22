@@ -39,8 +39,11 @@ export async function POST(request: Request, { params }: { params: { slug: strin
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
+    console.log(`API: Received file upload request for ${file.name}, type: ${file.type}, size: ${file.size} bytes`)
+
     // Check if the file type is supported or if it's a HEIC file by extension
     if (!SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase()) && !isLikelyHeicFile(file)) {
+      console.log(`API: Unsupported file type: ${file.type || "unknown"}`)
       return NextResponse.json(
         {
           error: `Unsupported file type: ${file.type || "unknown"}. Only JPEG, PNG, GIF, WebP, and HEIC are supported.`,
@@ -51,6 +54,7 @@ export async function POST(request: Request, { params }: { params: { slug: strin
 
     // Use the centralized function to upload the photo
     const result = await uploadEventPhoto(slug, file)
+    console.log(`API: Successfully uploaded file ${file.name} to ${result.pathname}`)
 
     // Return the blob URL and metadata
     return NextResponse.json(result)
