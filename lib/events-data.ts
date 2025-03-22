@@ -1,6 +1,9 @@
 import { list, put, head } from "@vercel/blob"
 import type { Event, Venue } from "@/types/event"
 import { getVenueById } from "./venues-data"
+import { revalidatePath } from "next/cache"
+import { v4 as uuidv4 } from "uuid"
+import heic2any from "heic2any"
 
 // Helper function to extract version number from filename
 function extractVersionNumber(filename: string): number {
@@ -390,41 +393,92 @@ export async function getEventBySlug(slug: string): Promise<Event | null> {
   }
 }
 
-// Add this new function to upload a photo for an event
-export async function uploadEventPhoto(
-  slug: string,
-  file: File,
-): Promise<{ url: string; pathname: string; contentType: string }> {
-  try {
-    console.log(`Uploading photo for event with slug: ${slug}`)
+// Add this helper function to detect HEIC files
+export async function isHeicFile(file: File): Promise<boolean> {
+  // Check by file extension
+  if (file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")) {
+    return true
+  }
 
-    // Verify the event exists
-    const event = await getEventBySlug(slug)
-    if (!event) {
-      throw new Error(`Event not found with slug: ${slug}`)
+  // Check by MIME type
+  if (file.type === "image/heic" || file.type === "image/heif") {
+    return true
+  }
+
+  // If neither check works, try to read the file header
+  try {
+    const buffer = await file.arrayBuffer()
+    const view = new Uint8Array(buffer, 0, 12)
+    const signature = Array.from(view.slice(4, 8))
+      .map((byte) => String.fromCharCode(byte))
+      .join("")
+
+    return (
+      signature === "ftyp" &&
+      Array.from(view.slice(8, 12))
+        .map((byte) => String.fromCharCode(byte))
+        .join("")
+        .includes("heic")
+    )
+  } catch (error) {
+    console.error("Error checking file header:", error)
+    return false
+  }
+}
+
+// Update the uploadEventPhoto function to handle HEIC conversion
+export async function uploadEventPhoto(eventSlug: string, file: File) {
+  try {
+    let uploadFile = file
+    let fileName = file.name
+
+    // Check if the file is a HEIC file
+    const isHeic = await isHeicFile(file)
+
+    if (isHeic) {
+      console.log(`Converting HEIC file: ${file.name}`)
+
+      try {
+        // Convert HEIC to JPEG using heic2any
+        const jpegBlob = (await heic2any({
+          blob: file,
+          toType: "image/jpeg",
+          quality: 0.85,
+        })) as Blob
+
+        // Create a new File object from the converted Blob
+        const newFileName = fileName.replace(/\.(heic|heif)$/i, ".jpg")
+        uploadFile = new File([jpegBlob], newFileName, { type: "image/jpeg" })
+        fileName = newFileName
+
+        console.log(`Converted ${file.name} to ${newFileName}`)
+      } catch (conversionError) {
+        console.error("HEIC conversion failed:", conversionError)
+        throw new Error(`Failed to convert HEIC file: ${conversionError.message}`)
+      }
     }
 
-    // Generate a unique filename
-    const timestamp = Date.now()
-    const filename = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "-")}`
+    // Generate a unique pathname for the photo
+    const uniqueId = uuidv4()
+    const pathname = `events/${eventSlug}/photos/${uniqueId}-${fileName}`
 
-    // Upload the file to blob storage using the event slug
-    const blob = await put(`data/events/${slug}/photos/${filename}`, file, {
+    // Upload the file to Vercel Blob
+    const blob = await put(pathname, uploadFile, {
       access: "public",
-      contentType: file.type,
-      cacheControl: "public, max-age=31536000", // Cache for 1 year
+      addRandomSuffix: false,
     })
 
-    console.log(`Successfully uploaded photo for event ${slug}: ${blob.url}`)
+    // Revalidate the photos page
+    revalidatePath(`/events/${eventSlug}/photos`)
+    revalidatePath(`/admin/events/${eventSlug}/photos`)
 
-    // Return the blob URL and metadata
     return {
       url: blob.url,
       pathname: blob.pathname,
-      contentType: blob.contentType || file.type, // Use the file's content type as a fallback
+      contentType: blob.contentType,
     }
   } catch (error) {
-    console.error(`Error uploading photo for event ${slug}:`, error)
+    console.error(`Error uploading photo for event ${eventSlug}:`, error)
     throw error
   }
 }
