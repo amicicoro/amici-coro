@@ -8,11 +8,11 @@
  * @returns A Promise that resolves to a File object containing the converted JPEG
  */
 export async function convertHeicToJpeg(file: File): Promise<File> {
-  // Dynamically import heic2any only on the client side
-  const heic2any = (await import("heic2any")).default
-
   try {
-    console.log(`Converting HEIC file: ${file.name}`)
+    console.log(`Starting HEIC conversion for: ${file.name}`)
+
+    // Dynamically import heic2any only on the client side
+    const heic2any = (await import("heic2any")).default
 
     // Convert HEIC to JPEG using heic2any
     const jpegBlob = (await heic2any({
@@ -21,11 +21,17 @@ export async function convertHeicToJpeg(file: File): Promise<File> {
       quality: 0.85,
     })) as Blob
 
+    // Verify the conversion worked
+    if (!jpegBlob || jpegBlob.size === 0) {
+      throw new Error("Conversion failed: Empty result")
+    }
+
     // Create a new File object from the converted Blob
     const newFileName = file.name.replace(/\.(heic|heif)$/i, ".jpg")
     const convertedFile = new File([jpegBlob], newFileName, { type: "image/jpeg" })
 
-    console.log(`Converted ${file.name} to ${newFileName}`)
+    console.log(`Successfully converted ${file.name} to JPEG (${convertedFile.size} bytes)`)
+
     return convertedFile
   } catch (error) {
     console.error("HEIC conversion failed:", error)
@@ -34,7 +40,7 @@ export async function convertHeicToJpeg(file: File): Promise<File> {
 }
 
 /**
- * Checks if a file is a HEIC file by examining its content
+ * Checks if a file is a HEIC file by examining its content and extension
  * @param file The file to check
  * @returns A Promise that resolves to true if the file is a HEIC file
  */

@@ -3,6 +3,9 @@ import { uploadEventPhoto } from "@/lib/events-data"
 
 export const runtime = "edge"
 
+// List of supported image MIME types
+const SUPPORTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "image/svg+xml"]
+
 export async function POST(request: Request, { params }: { params: { slug: string } }) {
   const { slug } = params
 
@@ -19,6 +22,16 @@ export async function POST(request: Request, { params }: { params: { slug: strin
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
+    }
+
+    // Check if the file type is supported
+    if (!SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) {
+      return NextResponse.json(
+        {
+          error: `Unsupported file type: ${file.type || "unknown"}. Only JPEG, PNG, GIF, WebP, and SVG are supported.`,
+        },
+        { status: 400 },
+      )
     }
 
     // Use the centralized function to upload the photo

@@ -21,7 +21,10 @@ import {
   Loader2,
   AlertCircle,
   Info,
+  RefreshCw,
+  FileWarning,
 } from "lucide-react"
+import { convertHeicToJpeg, isHeicFile } from "@/lib/client-utils"
 
 interface Photo {
   url: string
@@ -32,17 +35,24 @@ interface Photo {
 interface PhotoPreview {
   file: File
   preview: string
-  status: "pending" | "uploading" | "completed" | "failed"
+  status: "pending" | "uploading" | "completed" | "failed" | "unsupported"
   error?: string
   isHeic?: boolean
+  convertedFile?: File
 }
 
-// Helper function to detect HEIC files on the client side
-const isHeicFile = (file: File): boolean => {
-  const name = file.name.toLowerCase()
-  const type = file.type.toLowerCase()
-  return name.endsWith(".heic") || name.endsWith(".heif") || type === "image/heic" || type === "image/heif"
-}
+// List of supported image MIME types
+const SUPPORTED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/svg+xml",
+  // HEIC is supported but needs conversion
+  "image/heic",
+  "image/heif",
+]
 
 export default function AdminEventPhotosPage() {
   const router = useRouter()
@@ -113,19 +123,64 @@ export default function AdminEventPhotosPage() {
     router.back()
   }
 
+  // Check if a file is a supported image type
+  const isFileSupported = (file: File): boolean => {
+    return SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())
+  }
+
+  // Process files before adding them to the upload queue
+  const processFiles = async (files: File[]): Promise<PhotoPreview[]> => {
+    const processedFiles: PhotoPreview[] = []
+
+    for (const file of files) {
+      // Create a base preview object
+      const preview = URL.createObjectURL(file)
+      const photoPreview: PhotoPreview = {
+        file,
+        preview,
+        status: "pending",
+      }
+
+      // Check if file is supported
+      if (!isFileSupported(file)) {
+        photoPreview.status = "unsupported"
+        photoPreview.error = `Unsupported file type: ${file.type || "unknown"}`
+        processedFiles.push(photoPreview)
+        continue
+      }
+
+      // Check if it's a HEIC file
+      const fileIsHeic = await isHeicFile(file)
+      if (fileIsHeic) {
+        photoPreview.isHeic = true
+
+        try {
+          // Try to convert HEIC to JPEG
+          console.log(`Converting HEIC file: ${file.name}`)
+          const convertedFile = await convertHeicToJpeg(file)
+          photoPreview.convertedFile = convertedFile
+          console.log(`Successfully converted ${file.name} to JPEG`)
+        } catch (err) {
+          console.error(`Failed to convert HEIC file: ${file.name}`, err)
+          photoPreview.status = "failed"
+          photoPreview.error = `Failed to convert HEIC file: ${err instanceof Error ? err.message : String(err)}`
+        }
+      }
+
+      processedFiles.push(photoPreview)
+    }
+
+    return processedFiles
+  }
+
   // Upload handlers
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return
 
     const files = Array.from(e.target.files)
 
-    // Create photo previews with pending status
-    const newPhotos = files.map((file) => ({
-      file,
-      preview: URL.createObjectURL(file),
-      status: "pending" as const,
-      isHeic: isHeicFile(file),
-    }))
+    // Process files (check support, convert HEIC)
+    const newPhotos = await processFiles(files)
 
     setPhotoUploads((prev) => [...prev, ...newPhotos])
   }
@@ -134,20 +189,15 @@ export default function AdminEventPhotosPage() {
     e.preventDefault()
   }
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault()
 
     if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) return
 
     const files = Array.from(e.dataTransfer.files)
 
-    // Create photo previews with pending status
-    const newPhotos = files.map((file) => ({
-      file,
-      preview: URL.createObjectURL(file),
-      status: "pending" as const,
-      isHeic: isHeicFile(file),
-    }))
+    // Process files (check support, convert HEIC)
+    const newPhotos = await processFiles(files)
 
     setPhotoUploads((prev) => [...prev, ...newPhotos])
   }
@@ -164,8 +214,76 @@ export default function AdminEventPhotosPage() {
     setPhotoUploads((prev) => prev.filter((p) => p.preview !== preview))
   }
 
+  // New function to handle retrying a failed upload
+  const handleRetryUpload = async (preview: string) => {
+    // Find the photo to retry
+    const photoToRetry = photoUploads.find(
+      (p) => p.preview === preview && (p.status === "failed" || p.status === "unsupported"),
+    )
+    if (!photoToRetry) return
+
+    // For unsupported files, we can't retry
+    if (photoToRetry.status === "unsupported") {
+      alert("This file type is not supported. Please upload a supported image format.")
+      return
+    }
+
+    // Update status to uploading
+    setPhotoUploads((prev) =>
+      prev.map((p) => (p.preview === preview ? { ...p, status: "uploading", error: undefined } : p)),
+    )
+
+    try {
+      // Get the admin auth token
+      const token = localStorage.getItem("adminAuthToken")
+      if (!token) {
+        throw new Error("Authentication required")
+      }
+
+      // Create a FormData object
+      const formData = new FormData()
+
+      // Use the converted file if available (for HEIC files)
+      const fileToUpload = photoToRetry.convertedFile || photoToRetry.file
+      formData.append("file", fileToUpload)
+
+      // Upload the file
+      const response = await fetch(`/api/events/${slug}/photos/upload`, {
+        method: "POST",
+        headers: {
+          "X-Admin-Auth-Token": token,
+        },
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to upload photo")
+      }
+
+      // Update status to completed
+      setPhotoUploads((prev) => prev.map((p) => (p.preview === preview ? { ...p, status: "completed" } : p)))
+
+      // Refresh photos
+      fetchPhotos()
+    } catch (err) {
+      console.error("Error retrying upload:", err)
+
+      // Update status back to failed with the new error
+      setPhotoUploads((prev) =>
+        prev.map((p) =>
+          p.preview === preview
+            ? { ...p, status: "failed", error: err instanceof Error ? err.message : "Upload failed" }
+            : p,
+        ),
+      )
+    }
+  }
+
   const handleUpload = async () => {
-    if (photoUploads.length === 0 || photoUploads.every((p) => p.status === "completed")) return
+    // Only upload pending photos
+    const pendingPhotos = photoUploads.filter((p) => p.status === "pending")
+    if (pendingPhotos.length === 0) return
 
     setIsUploading(true)
     setUploadProgress(0)
@@ -178,8 +296,6 @@ export default function AdminEventPhotosPage() {
         throw new Error("Authentication required")
       }
 
-      // Get all pending photos
-      const pendingPhotos = photoUploads.filter((p) => p.status === "pending")
       const totalToUpload = pendingPhotos.length
       let completed = 0
 
@@ -191,7 +307,10 @@ export default function AdminEventPhotosPage() {
         try {
           // Create a FormData object
           const formData = new FormData()
-          formData.append("file", photo.file)
+
+          // Use the converted file if available (for HEIC files)
+          const fileToUpload = photo.convertedFile || photo.file
+          formData.append("file", fileToUpload)
 
           // Upload the file
           const response = await fetch(`/api/events/${slug}/photos/upload`, {
@@ -258,6 +377,8 @@ export default function AdminEventPhotosPage() {
         return <CheckCircle className="h-4 w-4 text-green-500" />
       case "failed":
         return <AlertCircle className="h-4 w-4 text-red-500" />
+      case "unsupported":
+        return <FileWarning className="h-4 w-4 text-amber-500" />
       default:
         return null
     }
@@ -266,6 +387,7 @@ export default function AdminEventPhotosPage() {
   const pendingCount = photoUploads.filter((p) => p.status === "pending").length
   const completedCount = photoUploads.filter((p) => p.status === "completed").length
   const failedCount = photoUploads.filter((p) => p.status === "failed").length
+  const unsupportedCount = photoUploads.filter((p) => p.status === "unsupported").length
   const heicCount = photoUploads.filter((p) => p.isHeic).length
 
   return (
@@ -314,6 +436,20 @@ export default function AdminEventPhotosPage() {
             </div>
           )}
 
+          {/* Unsupported file notice */}
+          {unsupportedCount > 0 && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-md mb-4 flex items-start gap-2">
+              <FileWarning className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium">Unsupported files detected ({unsupportedCount})</p>
+                <p className="text-sm mt-1">
+                  Some files are not supported image formats. Please remove them and upload only JPG, PNG, GIF, WebP, or
+                  HEIC files.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* File input area */}
           <div
             className={`border-2 border-dashed rounded-md p-8 text-center ${isUploading ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-muted/50"} transition-colors`}
@@ -334,7 +470,7 @@ export default function AdminEventPhotosPage() {
             <p className="mt-2 text-muted-foreground">
               {isUploading ? "Upload in progress..." : "Drag and drop photos here, or click to select files"}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">Supported formats: JPG, PNG, GIF, WEBP, HEIC</p>
+            <p className="text-xs text-muted-foreground mt-1">Supported formats: JPG, PNG, GIF, WebP, HEIC</p>
           </div>
 
           {/* Upload stats */}
@@ -342,8 +478,9 @@ export default function AdminEventPhotosPage() {
             <div className="flex flex-wrap gap-2 text-sm text-muted-foreground mt-4">
               <span>Total: {photoUploads.length}</span>
               {pendingCount > 0 && <span>• Pending: {pendingCount}</span>}
-              {completedCount > 0 && <span>• Completed: {completedCount}</span>}
+              {completedCount > 0 && <span className="text-green-600">• Completed: {completedCount}</span>}
               {failedCount > 0 && <span className="text-red-500">• Failed: {failedCount}</span>}
+              {unsupportedCount > 0 && <span className="text-amber-500">• Unsupported: {unsupportedCount}</span>}
             </div>
           )}
 
@@ -354,7 +491,7 @@ export default function AdminEventPhotosPage() {
                 {photoUploads.map((photo, index) => (
                   <div key={index} className="relative group">
                     <div
-                      className={`relative aspect-square rounded-md overflow-hidden ${photo.status === "failed" ? "opacity-50" : ""}`}
+                      className={`relative aspect-square rounded-md overflow-hidden ${photo.status === "failed" || photo.status === "unsupported" ? "opacity-50" : ""}`}
                     >
                       <Image
                         src={photo.preview || "/placeholder.svg"}
@@ -382,10 +519,34 @@ export default function AdminEventPhotosPage() {
                         </div>
                       )}
 
-                      {/* Error message for failed uploads */}
-                      {photo.status === "failed" && photo.error && (
-                        <div className="absolute bottom-0 inset-x-0 bg-red-500 text-white text-xs px-2 py-1">
-                          {photo.error.length > 20 ? photo.error.substring(0, 20) + "..." : photo.error}
+                      {/* Error message and retry button for failed uploads */}
+                      {photo.status === "failed" && (
+                        <div className="absolute inset-0 bg-black/10 flex flex-col items-center justify-center">
+                          <div className="bg-red-500 text-white text-xs px-2 py-1 rounded mb-2">Upload Failed</div>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="bg-white hover:bg-gray-100 gap-1"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleRetryUpload(photo.preview)
+                            }}
+                          >
+                            <RefreshCw className="h-3 w-3" />
+                            Retry
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Unsupported file message */}
+                      {photo.status === "unsupported" && (
+                        <div className="absolute inset-0 bg-black/10 flex flex-col items-center justify-center">
+                          <div className="bg-amber-500 text-white text-xs px-2 py-1 rounded mb-2">
+                            Unsupported Format
+                          </div>
+                          <p className="text-xs text-center px-2 bg-white/80 py-1 rounded">
+                            {photo.error || "This file type is not supported"}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -394,13 +555,13 @@ export default function AdminEventPhotosPage() {
                     <button
                       type="button"
                       className={`absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 
-                        ${isUploading ? "opacity-50 cursor-not-allowed" : "opacity-0 group-hover:opacity-100"} 
+                        ${isUploading && photo.status === "uploading" ? "opacity-50 cursor-not-allowed" : "opacity-0 group-hover:opacity-100"} 
                         transition-opacity`}
                       onClick={(e) => {
                         e.stopPropagation()
-                        if (!isUploading) handleRemoveFile(photo.preview)
+                        if (!(isUploading && photo.status === "uploading")) handleRemoveFile(photo.preview)
                       }}
-                      disabled={isUploading}
+                      disabled={isUploading && photo.status === "uploading"}
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -424,9 +585,7 @@ export default function AdminEventPhotosPage() {
               <div className="flex justify-end mt-4">
                 <Button
                   onClick={handleUpload}
-                  disabled={
-                    isUploading || photoUploads.length === 0 || photoUploads.every((p) => p.status === "completed")
-                  }
+                  disabled={isUploading || pendingCount === 0 || photoUploads.every((p) => p.status !== "pending")}
                   className="gap-2"
                 >
                   <Upload className="h-4 w-4" />
