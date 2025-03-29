@@ -5,6 +5,18 @@ import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
 
 export default function JoinTheChoir() {
+ const rules = [
+   "All singers of the choir are subject to the acceptance of the Director of Music",
+   "All singers attending an event must learn the music for the weekend/service/residency prior to arriving",
+   "All singers are required to attend rehearsals at the event site at the time set by the Director of Music",
+ ]
+
+ const qualities = [
+    "Dedication, commitment and a love of singing",
+    "An ability to blend with other singers",
+    "An ability to sight-read to a reasonable standard",
+ ]
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -25,63 +37,69 @@ export default function JoinTheChoir() {
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-playfair text-center">Join Amici Coro</h1>
 
             <section className="space-y-4">
-              <h2 className="text-2xl md:text-3xl font-playfair">Why Join Us?</h2>
-              <p className="text-lg leading-relaxed">
-                Joining a choir is good for you! Amici Coro is always enthusiastic about welcoming new singers. If you
-                are looking for a new challenge and are a confident singer, we'd love to hear from you.
-              </p>
-              <p className="text-lg leading-relaxed">
-                We are a friendly bunch who enjoy making music to a high standard. We perform mainly Anglican Choral
-                music in Cathedrals largely in the United Kingdom, singing Evensong or Mass at a Cathedral venue every
-                few months.
-              </p>
-            </section>
-
-            <section className="space-y-4">
               <h2 className="text-2xl md:text-3xl font-playfair">Membership Information</h2>
               <p className="text-lg leading-relaxed">
-                Amici Coro is an amateur, award-winning, mixed voice, adult chamber choir. We originated as a church
-                choir in Warlingham, Surrey, but in 2001 became a choir in our own right, not affiliated to any church
-                in particular, bringing together singers from all over the country.
+                Amici Coro is an amateur choir and the two most important attributes of its singers are a love for
+                singing and striving for the highest possible standards in all the music that we perform. We aim to
+                work hard and enjoy ourselves, and whilst rules and regulations may seem rather formal, the following
+                guidelines outline the principles by which we aim to make music together.
               </p>
-              <p className="text-lg leading-relaxed">
-                As members of Amici Coro, we share a love for singing a wide and varied sacred choral repertoire, and,
-                although amateur singers, we strive for the highest possible standards in all the music we perform. We
-                aim to work hard and enjoy ourselves.
-              </p>
-            </section>
 
-            <section className="space-y-4">
-              <h2 className="text-2xl md:text-3xl font-playfair">Rehearsals and Performances</h2>
               <p className="text-lg leading-relaxed">
-                We rehearse on Saturday mornings from 10:00 am to 1:00 pm, typically once a month. Our rehearsals are
-                held at St. Michael and All Angels Church, Croydon. We usually perform 4-5 times a year in various
-                cathedrals across the UK.
+                {rules.map((rule, index) => (
+                  <li key={index} className="text-lg leading-relaxed">{rule}</li>
+                ))}
               </p>
               <p className="text-lg leading-relaxed">
-                Members are expected to attend all rehearsals and performances. If you cannot make a rehearsal, please
-                let the Director of Music know in advance.
+                Amici Coro is a chamber choir and the size, distribution and quality of the voices will be carefully
+                monitored by the Director of Music to ensure a good musical balance and perform to a high standard.
+                The musical requirements of its singers reflect this, and whilst singers are not expected to be of a
+                professional standard, we are looking for the following qualities:
               </p>
-            </section>
-
-            <section className="space-y-4">
-              <h2 className="text-2xl md:text-3xl font-playfair">Music Distribution</h2>
-              <p className="text-lg leading-relaxed">
-                Prior to each event, members receive digital copies of the music via email. This allows for individual
-                practice before group rehearsals. For performances, physical copies of the music are provided at the
-                venue. Members are responsible for returning these copies after each performance.
-              </p>
-              <p className="text-lg leading-relaxed">
-                We encourage all members to familiarize themselves with the music before rehearsals to ensure productive
-                practice sessions and high-quality performances.
+              <p>
+                {qualities.map((quality, index) => (
+                  <li key={index} className="text-lg leading-relaxed">{quality}</li>
+                ))}
               </p>
             </section>
 
             <section className="space-y-4">
               <h2 className="text-2xl md:text-3xl font-playfair">Membership Fees</h2>
               <p className="text-lg leading-relaxed">
-                There is an annual membership fee of £100, which covers the cost of music hire, rehearsal venues, and
-                other administrative expenses. This fee can be paid in installments if needed.
+                Singers are charged a fee per event to cover the cost of hiring music, fees for organists and the
+                Director of Music, the Organist and any reasonable costs incurred by the Director of Music or members
+                of the committee. The fees are split into cost per service and are only recoverable for the amount of
+                services which a singer attends.
+              </p>
+              <p className="text-lg leading-relaxed">
+                All singers are expected to make their own transport provisions for rehearsals and events.
+              </p>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-2xl md:text-3xl font-playfair">Music & Distribution</h2>
+              <p className="text-lg leading-relaxed">
+                The music for each event is chosen by the Director of Music and digital copies will be provided in
+                advance of each event. Hard copies will be available for every member at the venue. Singers are free to
+                use their own copies, including digital versions, so long as the editions match up. The use of a tablet
+                and digital scores is encouraged.
+              </p>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-2xl md:text-3xl font-playfair">Venues & Dates</h2>
+              <p className="text-lg leading-relaxed">
+                We aim to sing Evensong on a Saturday or a weekend residency in an English Cathedral every 2-3 months.
+              </p>
+              <p className="text-lg leading-relaxed">
+                A full week's residency at a Cathedral is usually planned for August.
+              </p>
+              <p className="text-lg leading-relaxed">
+                Additional concerts or other services are planned as appropriate.
+              </p>
+              <p className="text-lg leading-relaxed">
+                The committee aim to publish the dates of each event well in advance to enable as full an attendance
+                from singers as possible.
               </p>
             </section>
 
