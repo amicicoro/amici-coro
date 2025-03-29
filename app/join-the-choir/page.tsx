@@ -106,8 +106,9 @@ export default function JoinTheChoir() {
             <section className="space-y-4">
               <h2 className="text-2xl md:text-3xl font-playfair">How to Join</h2>
               <p className="text-lg leading-relaxed">
-                If you're interested in joining Amici Coro, we encourage you to attend one of our rehearsals to get a
-                feel for the choir. After that, you'll be invited to an informal audition with our Director of Music.
+                Joining a choir is good for you! Amici Coro is always enthusiastic about new singers. If you are
+                looking for a new challenge and are a confident singer, we’d love to hear from you. We encourage you to
+                attend one of our rehearsals to get a feel for the choir.
               </p>
               <p className="text-lg leading-relaxed">
                 To express your interest or for more information, please contact our Director of Music, Andrew Scott.
