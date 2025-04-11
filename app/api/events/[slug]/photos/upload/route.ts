@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { uploadEventPhoto } from "@/lib/events-data"
+import { put } from "@vercel/blob"
 
 export const runtime = "edge"
 
@@ -52,12 +52,26 @@ export async function POST(request: Request, { params }: { params: { slug: strin
       )
     }
 
-    // Use the centralized function to upload the photo
-    const result = await uploadEventPhoto(slug, file)
+    // Generate a unique filename using timestamp
+    const timestamp = Date.now()
+    const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, "-")
+    const uniqueFileName = `${timestamp}-${sanitizedFilename}`
+
+    // Upload directly to Vercel Blob without using the events-data module
+    const result = await put(`data/events/${slug}/photos/${uniqueFileName}`, file, {
+      access: "public",
+      contentType: file.type || "application/octet-stream",
+      cacheControl: "public, max-age=31536000", // Cache for 1 year
+    })
+
     console.log(`API: Successfully uploaded file ${file.name} to ${result.pathname}`)
 
     // Return the blob URL and metadata
-    return NextResponse.json(result)
+    return NextResponse.json({
+      url: result.url,
+      pathname: result.pathname,
+      contentType: file.contentType || file.type || "application/octet-stream",
+    })
   } catch (error) {
     console.error(`API: Error uploading photo for event with slug ${slug}:`, error)
     return NextResponse.json(
@@ -66,4 +80,3 @@ export async function POST(request: Request, { params }: { params: { slug: strin
     )
   }
 }
-

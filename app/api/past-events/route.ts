@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server"
-import { getPastEvents } from "@/lib/events-data"
 
 export async function GET() {
   try {
+    // Dynamically import the server-only module
+    const { getPastEvents } = await import("@/lib/events-data")
+
     // Use the real data from blob storage
     const pastEvents = await getPastEvents()
 
@@ -18,4 +20,3 @@ export async function GET() {
     return NextResponse.json({ error: "Failed to fetch past events" }, { status: 500 })
   }
 }
-
