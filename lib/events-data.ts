@@ -21,9 +21,9 @@ const CACHE_KEYS = {
 
 // Cache TTLs in seconds
 const CACHE_TTL = {
-  EVENTS: 60 * 60 * 24 * 7, // 7 days
-  PHOTOS: 60 * 60 * 24 * 14, // 14 days
-  VENUES: 60 * 60 * 24 * 30, // 30 days (venues rarely change)
+  EVENTS: 60 * 60 * 24 * 90, // 90 days
+  PHOTOS: 60 * 60 * 24 * 90, // 90 days
+  VENUES: 60 * 60 * 24 * 90, // 90 days
 }
 
 // Helper function to extract version number from filename
