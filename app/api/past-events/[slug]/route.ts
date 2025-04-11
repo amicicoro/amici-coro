@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server"
+import { getEventById, getEventWithVenue, isEventInPast } from "@/lib/events-data"
 
 export async function GET(request: Request, { params }: { params: { slug: string } }) {
   try {
     const { slug } = await params
-
-    // Dynamically import the server-only module
-    const { getEventById, getEventWithVenue, isEventInPast } = await import("@/lib/events-data")
 
     const event = await getEventById(slug)
     if (!event) {

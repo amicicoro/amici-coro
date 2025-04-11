@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server"
+import { getAllVenues } from "@/lib/venues-data"
 
 export async function GET() {
   try {
-    // Dynamically import the server-only module
-    const { getAllVenues } = await import("@/lib/venues-data")
-
     // Fetch all venues using the existing function
     const venues = await getAllVenues()
 
@@ -15,3 +13,4 @@ export async function GET() {
     return NextResponse.json({ error: "Failed to fetch venues" }, { status: 500 })
   }
 }
+

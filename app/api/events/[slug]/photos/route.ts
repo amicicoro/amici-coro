@@ -1,12 +1,10 @@
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
+import { getEventPhotos } from "@/lib/events-data"
 
-export async function GET(request: Request, { params }: { params: { slug: string } }) {
+export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
   try {
     const { slug } = params
     console.log(`API: Fetching photos for event with slug: ${slug}`)
-
-    // Dynamically import the server-only module
-    const { getEventPhotos } = await import("@/lib/events-data")
 
     // Get photos for the event
     const photos = await getEventPhotos(slug)
@@ -19,3 +17,4 @@ export async function GET(request: Request, { params }: { params: { slug: string
     return NextResponse.json({ error: "Failed to fetch photos" }, { status: 500 })
   }
 }
+
