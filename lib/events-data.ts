@@ -1,6 +1,30 @@
-import { list, put, head } from "@vercel/blob"
+import "server-only"
+
+// Import types only
 import type { Event, Venue } from "@/types/event"
+
+// Import Vercel Blob
+import { list, put, head } from "@vercel/blob"
+
+// Import venues data
 import { getVenueById } from "./venues-data"
+
+// Cache keys
+const CACHE_KEYS = {
+  ALL_EVENTS: "events:all",
+  EVENT: (id: string) => `events:${id}`,
+  EVENT_BY_SLUG: (slug: string) => `events:slug:${slug}`,
+  UPCOMING_EVENTS: "events:upcoming",
+  PAST_EVENTS: "events:past",
+  EVENT_PHOTOS: (slug: string) => `events:${slug}:photos`,
+}
+
+// Cache TTLs in seconds
+const CACHE_TTL = {
+  EVENTS: 60 * 60 * 24 * 7, // 7 days
+  PHOTOS: 60 * 60 * 24 * 14, // 14 days
+  VENUES: 60 * 60 * 24 * 30, // 30 days (venues rarely change)
+}
 
 // Helper function to extract version number from filename
 function extractVersionNumber(filename: string): number {
@@ -35,7 +59,29 @@ function getMostRecentEventFile(blobs: any[]) {
   })[0]
 }
 
-export async function getEventById(id: string): Promise<Event | null> {
+// Helper function to invalidate event caches when an event is created or updated
+async function invalidateEventCaches(eventId: string, slug: string) {
+  console.log(`Invalidating caches for event ${eventId} (${slug})`)
+
+  try {
+    // Dynamically import the cache-decorator module
+    const { invalidateCache } = await import("./cache-decorator")
+
+    // Delete specific event caches
+    await invalidateCache(CACHE_KEYS.EVENT(eventId))
+    await invalidateCache(CACHE_KEYS.EVENT_BY_SLUG(slug))
+
+    // Delete collection caches
+    await invalidateCache(CACHE_KEYS.ALL_EVENTS)
+    await invalidateCache(CACHE_KEYS.UPCOMING_EVENTS)
+    await invalidateCache(CACHE_KEYS.PAST_EVENTS)
+  } catch (error) {
+    console.error(`Error invalidating caches for event ${eventId}:`, error)
+  }
+}
+
+// Base implementation without caching
+async function _getEventById(id: string): Promise<Event | null> {
   try {
     console.log(`Looking for event with ID: ${id}`)
 
@@ -71,10 +117,14 @@ export async function getEventById(id: string): Promise<Event | null> {
     try {
       const eventData = await response.json()
       console.log(`Successfully parsed event data for ID: ${id}`)
-      return {
+
+      // Create the full event object with ID
+      const event = {
         ...eventData,
         id,
       }
+
+      return event
     } catch (parseError) {
       console.error(`Error parsing JSON for event ${id}:`, parseError)
       return null
@@ -85,52 +135,29 @@ export async function getEventById(id: string): Promise<Event | null> {
   }
 }
 
-// In the createEvent function, add a check to ensure the ID is valid for blob storage
-export async function createEvent(event: Event): Promise<Event> {
+// Apply caching decorator to the base implementation
+export async function getEventById(id: string): Promise<Event | null> {
   try {
-    // Check if the event already exists
-    const existingEvent = await getEventById(event.id)
-    if (existingEvent) {
-      throw new Error(`Event already exists: ${event.id}`)
-    }
+    // Dynamically import the cache-decorator module
+    const { createCachedFunction } = await import("./cache-decorator")
 
-    // Ensure the ID is valid for blob storage (no spaces, special characters)
-    const safeId = event.id
-      .toLowerCase()
-      .replace(/[^\w-]/g, "-") // Replace any non-word chars (except hyphens) with hyphens
-      .replace(/-+/g, "-") // Replace multiple hyphens with a single hyphen
-      .replace(/^-|-$/g, "") // Remove leading and trailing hyphens
+    // Create a cached version of the function
+    const cachedFn = createCachedFunction(_getEventById, "event", CACHE_TTL.EVENTS, (id: string) => id)
 
-    if (safeId !== event.id) {
-      console.log(`Sanitized event ID from "${event.id}" to "${safeId}" for blob storage compatibility`)
-      event.id = safeId
-      event.slug = safeId // Update slug to match the sanitized ID
-    }
-
-    // Prepare the event data (remove id as it's in the path)
-    const { id, ...eventData } = event
-
-    // Convert to JSON
-    const eventJson = JSON.stringify(eventData, null, 2)
-
-    // Write the new event to blob storage (using unversioned filename for new events)
-    const result = await put(`data/events/${event.id}/event.json`, eventJson, {
-      contentType: "application/json",
-      access: "public", // Add this line to make the blob publicly accessible
-    })
-
-    console.log(`Created new event: ${event.id}`)
-
-    // Return the created event
-    return event
+    // Call the cached function
+    return await cachedFn(id)
   } catch (error) {
-    console.error(`Error creating event ${event.id}:`, error)
-    throw error
+    console.error(`Error in getEventById for ${id}:`, error)
+    // Fall back to the base implementation
+    return await _getEventById(id)
   }
 }
 
-export async function getAllEvents(): Promise<Event[]> {
+// Base implementation without caching
+async function _getAllEvents(): Promise<Event[]> {
   try {
+    console.log(`Fetching all events from blob storage`)
+
     // List all blobs with events prefix
     const { blobs } = await list({
       prefix: "data/events/",
@@ -204,11 +231,77 @@ export async function getAllEvents(): Promise<Event[]> {
     const validEvents = events.filter((event): event is Event => event !== null)
 
     // Sort events by date (most recent first)
-    return validEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    const sortedEvents = validEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+    return sortedEvents
   } catch (error) {
     console.error("Error fetching events from blob storage:", error)
     // Return an empty array instead of throwing to prevent page crashes
     return []
+  }
+}
+
+// Apply caching decorator to the base implementation
+export async function getAllEvents(): Promise<Event[]> {
+  try {
+    // Dynamically import the cache-decorator module
+    const { createCachedFunction } = await import("./cache-decorator")
+
+    // Create a cached version of the function
+    const cachedFn = createCachedFunction(_getAllEvents, "events", CACHE_TTL.EVENTS, () => "all")
+
+    // Call the cached function
+    return await cachedFn()
+  } catch (error) {
+    console.error("Error in getAllEvents:", error)
+    // Fall back to the base implementation
+    return await _getAllEvents()
+  }
+}
+
+export async function createEvent(event: Event): Promise<Event> {
+  try {
+    // Check if the event already exists
+    const existingEvent = await getEventById(event.id)
+    if (existingEvent) {
+      throw new Error(`Event already exists: ${event.id}`)
+    }
+
+    // Ensure the ID is valid for blob storage (no spaces, special characters)
+    const safeId = event.id
+      .toLowerCase()
+      .replace(/[^\w-]/g, "-") // Replace any non-word chars (except hyphens) with hyphens
+      .replace(/-+/g, "-") // Replace multiple hyphens with a single hyphen
+      .replace(/^-|-$/g, "") // Remove leading and trailing hyphens
+
+    if (safeId !== event.id) {
+      console.log(`Sanitized event ID from "${event.id}" to "${safeId}" for blob storage compatibility`)
+      event.id = safeId
+      event.slug = safeId // Update slug to match the sanitized ID
+    }
+
+    // Prepare the event data (remove id as it's in the path)
+    const { id, ...eventData } = event
+
+    // Convert to JSON
+    const eventJson = JSON.stringify(eventData, null, 2)
+
+    // Write the new event to blob storage (using unversioned filename for new events)
+    const result = await put(`data/events/${event.id}/event.json`, eventJson, {
+      contentType: "application/json",
+      access: "public", // Add this line to make the blob publicly accessible
+    })
+
+    console.log(`Created new event: ${event.id}`)
+
+    // Invalidate caches
+    await invalidateEventCaches(event.id, event.slug)
+
+    // Return the created event
+    return event
+  } catch (error) {
+    console.error(`Error creating event ${event.id}:`, error)
+    throw error
   }
 }
 
@@ -267,6 +360,9 @@ export async function updateEvent(event: Event): Promise<Event> {
 
       console.log(`Successfully updated event ${event.id} to version ${newVersion}`)
       console.log(`Blob URL: ${result.url}`)
+
+      // Invalidate caches
+      await invalidateEventCaches(event.id, event.slug)
     } catch (putError) {
       console.error(`Error writing to blob storage for event ${event.id}:`, putError)
       throw putError
@@ -289,8 +385,11 @@ export function getEventWithVenue(event: Event): Event & { venue: Venue } {
   return { ...event, venue }
 }
 
-export async function getUpcomingEvents(): Promise<(Event & { venue: Venue })[]> {
+// Base implementation without caching
+async function _getUpcomingEvents(): Promise<(Event & { venue: Venue })[]> {
   try {
+    console.log(`Fetching upcoming events from blob storage`)
+
     const events = await getAllEvents()
     const now = new Date()
 
@@ -308,15 +407,38 @@ export async function getUpcomingEvents(): Promise<(Event & { venue: Venue })[]>
       .sort((a, b) => normalizeDate(a.date).getTime() - normalizeDate(b.date).getTime())
 
     // Use synchronous mapping since getEventWithVenue is now synchronous
-    return upcomingEvents.map(getEventWithVenue)
+    const upcomingEventsWithVenue = upcomingEvents.map(getEventWithVenue)
+
+    return upcomingEventsWithVenue
   } catch (error) {
     console.error("Error fetching upcoming events:", error)
     return []
   }
 }
 
-export async function getPastEvents(): Promise<(Event & { venue: Venue })[]> {
+// Apply caching decorator to the base implementation
+export async function getUpcomingEvents(): Promise<(Event & { venue: Venue })[]> {
   try {
+    // Dynamically import the cache-decorator module
+    const { createCachedFunction } = await import("./cache-decorator")
+
+    // Create a cached version of the function
+    const cachedFn = createCachedFunction(_getUpcomingEvents, "events", CACHE_TTL.EVENTS, () => "upcoming")
+
+    // Call the cached function
+    return await cachedFn()
+  } catch (error) {
+    console.error("Error in getUpcomingEvents:", error)
+    // Fall back to the base implementation
+    return await _getUpcomingEvents()
+  }
+}
+
+// Base implementation without caching
+async function _getPastEvents(): Promise<(Event & { venue: Venue })[]> {
+  try {
+    console.log(`Fetching past events from blob storage`)
+
     const events = await getAllEvents()
     const now = new Date()
 
@@ -334,15 +456,35 @@ export async function getPastEvents(): Promise<(Event & { venue: Venue })[]> {
       .sort((a, b) => normalizeDate(b.date).getTime() - normalizeDate(a.date).getTime()) // Note: reverse chronological order
 
     // Use synchronous mapping since getEventWithVenue is now synchronous
-    return pastEvents.map(getEventWithVenue)
+    const pastEventsWithVenue = pastEvents.map(getEventWithVenue)
+
+    return pastEventsWithVenue
   } catch (error) {
     console.error("Error fetching past events:", error)
     return []
   }
 }
 
-// Updated function to load photos for an event with proper content type handling
-export async function getEventPhotos(slug: string): Promise<{ url: string; pathname: string; contentType: string }[]> {
+// Apply caching decorator to the base implementation
+export async function getPastEvents(): Promise<(Event & { venue: Venue })[]> {
+  try {
+    // Dynamically import the cache-decorator module
+    const { createCachedFunction } = await import("./cache-decorator")
+
+    // Create a cached version of the function
+    const cachedFn = createCachedFunction(_getPastEvents, "events", CACHE_TTL.EVENTS, () => "past")
+
+    // Call the cached function
+    return await cachedFn()
+  } catch (error) {
+    console.error("Error in getPastEvents:", error)
+    // Fall back to the base implementation
+    return await _getPastEvents()
+  }
+}
+
+// Base implementation without caching
+async function _getEventPhotos(slug: string): Promise<{ url: string; pathname: string; contentType: string }[]> {
   try {
     console.log(`Fetching photos for event: ${slug}`)
 
@@ -377,15 +519,37 @@ export async function getEventPhotos(slug: string): Promise<{ url: string; pathn
     )
 
     // Filter out null values (non-image files or errors)
-    return photoBlobs.filter((blob): blob is { url: string; pathname: string; contentType: string } => blob !== null)
+    const photos = photoBlobs.filter(
+      (blob): blob is { url: string; pathname: string; contentType: string } => blob !== null,
+    )
+
+    return photos
   } catch (error) {
     console.error(`Error fetching photos for event ${slug}:`, error)
     return []
   }
 }
 
-// Add this new function to get an event by slug
-export async function getEventBySlug(slug: string): Promise<Event | null> {
+// Apply caching decorator to the base implementation
+export async function getEventPhotos(slug: string): Promise<{ url: string; pathname: string; contentType: string }[]> {
+  try {
+    // Dynamically import the cache-decorator module
+    const { createCachedFunction } = await import("./cache-decorator")
+
+    // Create a cached version of the function
+    const cachedFn = createCachedFunction(_getEventPhotos, "photos", CACHE_TTL.PHOTOS, (slug: string) => slug)
+
+    // Call the cached function
+    return await cachedFn(slug)
+  } catch (error) {
+    console.error("Error in getEventPhotos:", error)
+    // Fall back to the base implementation
+    return await _getEventPhotos(slug)
+  }
+}
+
+// Base implementation without caching
+async function _getEventBySlug(slug: string): Promise<Event | null> {
   try {
     console.log(`Looking for event with slug: ${slug}`)
 
@@ -401,10 +565,29 @@ export async function getEventBySlug(slug: string): Promise<Event | null> {
     }
 
     console.log(`Found event with slug: ${slug}, ID: ${event.id}`)
+
     return event
   } catch (error) {
     console.error(`Error fetching event with slug ${slug}:`, error)
     return null
+  }
+}
+
+// Apply caching decorator to the base implementation
+export async function getEventBySlug(slug: string): Promise<Event | null> {
+  try {
+    // Dynamically import the cache-decorator module
+    const { createCachedFunction } = await import("./cache-decorator")
+
+    // Create a cached version of the function
+    const cachedFn = createCachedFunction(_getEventBySlug, "event_slug", CACHE_TTL.EVENTS, (slug: string) => slug)
+
+    // Call the cached function
+    return await cachedFn(slug)
+  } catch (error) {
+    console.error("Error in getEventBySlug:", error)
+    // Fall back to the base implementation
+    return await _getEventBySlug(slug)
   }
 }
 
@@ -448,6 +631,9 @@ export async function uploadEventPhoto(
 
     console.log(`Successfully uploaded photo for event ${slug}: ${blob.url}`)
 
+    // Invalidate the photos cache for this event
+    await invalidateCache(CACHE_KEYS.EVENT_PHOTOS(slug))
+
     // Return the blob URL and metadata
     return {
       url: blob.url,
@@ -475,4 +661,3 @@ export function isEventInPast(event: Event): boolean {
 
   return normalizeDate(event.endDate) < now
 }
-

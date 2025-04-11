@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server"
-import { uploadEventPhoto } from "@/lib/events-data"
 
 export const runtime = "edge"
 
@@ -52,6 +51,9 @@ export async function POST(request: Request, { params }: { params: { slug: strin
       )
     }
 
+    // Dynamically import the server-only module
+    const { uploadEventPhoto } = await import("@/lib/events-data")
+
     // Use the centralized function to upload the photo
     const result = await uploadEventPhoto(slug, file)
     console.log(`API: Successfully uploaded file ${file.name} to ${result.pathname}`)
@@ -66,4 +68,3 @@ export async function POST(request: Request, { params }: { params: { slug: strin
     )
   }
 }
-

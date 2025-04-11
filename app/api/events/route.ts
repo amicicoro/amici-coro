@@ -1,9 +1,10 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { createEvent, getUpcomingEvents, getEventPhotos } from "@/lib/events-data"
-import type { Event } from "@/types/event"
+import { NextResponse } from "next/server"
 
 export async function GET() {
   try {
+    // Dynamically import the server-only module
+    const { getUpcomingEvents, getEventPhotos } = await import("@/lib/events-data")
+
     // Use the real data from blob storage
     const events = await getUpcomingEvents()
 
@@ -25,13 +26,16 @@ export async function GET() {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     // Check for auth token
     const authToken = request.headers.get("X-Admin-Auth-Token")
     if (!authToken) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    // Dynamically import the server-only module
+    const { createEvent } = await import("@/lib/events-data")
 
     const eventData = await request.json()
     console.log("Received event data:", eventData)
@@ -68,7 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the event using the real data function
-    const newEvent = await createEvent(eventData as Event)
+    const newEvent = await createEvent(eventData)
 
     return NextResponse.json(newEvent, { status: 201 })
   } catch (error) {
@@ -79,4 +83,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

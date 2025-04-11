@@ -1,90 +1,46 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Header } from "@/components/layout/Header"
-import { Footer } from "@/components/layout/Footer"
-import { EventCard } from "@/components/events/EventCard"
-import { EventsHero } from "@/components/events/EventsHero"
-import { EventFilters } from "@/components/events/EventFilters"
+import { useEffect, useState } from "react"
+import { fetchEvents } from "@/lib/client-data"
 import type { Event } from "@/types/event"
-import type { Venue } from "@/types/venue"
 
 export default function EventsPage() {
-  const [events, setEvents] = useState<(Event & { venue: Venue })[]>([])
-  const [filteredEvents, setFilteredEvents] = useState<(Event & { venue: Venue })[]>([])
+  const [events, setEvents] = useState<Event[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch("/api/events")
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error("Failed to fetch events")
-        }
-        return res.json()
-      })
-      .then((data) => {
+    async function loadEvents() {
+      try {
+        setIsLoading(true)
+        const data = await fetchEvents("upcoming")
         setEvents(data)
-        setFilteredEvents(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load events")
+      } finally {
         setIsLoading(false)
-      })
-      .catch((err) => {
-        setError(err.message)
-        setIsLoading(false)
-      })
+      }
+    }
+
+    loadEvents()
   }, [])
 
-  const handleSearch = (term: string) => {
-    const filtered = events.filter(
-      (event) =>
-        event.title.toLowerCase().includes(term.toLowerCase()) ||
-        event.description?.toLowerCase().includes(term.toLowerCase()) ||
-        event.venue.name.toLowerCase().includes(term.toLowerCase()),
-    )
-    setFilteredEvents(filtered)
+  if (isLoading) {
+    return <div>Loading events...</div>
   }
 
-  const handleSort = (key: "date" | "title" | "venue") => {
-    const sorted = [...filteredEvents].sort((a, b) => {
-      if (key === "date") {
-        return new Date(a.date).getTime() - new Date(b.date).getTime()
-      } else if (key === "venue") {
-        return a.venue.name.localeCompare(b.venue.name)
-      } else {
-        return a.title.localeCompare(b.title)
-      }
-    })
-    setFilteredEvents(sorted)
+  if (error) {
+    return <div>Error: {error}</div>
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-
-      <EventsHero title="Upcoming Events" />
-
-      <main className="flex-1 container mx-auto px-6 sm:px-8 md:px-12 py-12">
-        <div className="max-w-6xl mx-auto">
-          <EventFilters onSearch={handleSearch} onSort={handleSort} />
-
-          {isLoading ? (
-            <p className="text-center text-gray-600">Loading events...</p>
-          ) : error ? (
-            <p className="text-center text-red-600">{error}</p>
-          ) : filteredEvents.length === 0 ? (
-            <p className="text-center text-gray-600">No events found. Please try a different search.</p>
-          ) : (
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {filteredEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
-
-      <Footer />
+    <div>
+      <h1>Upcoming Events</h1>
+      <ul>
+        {events.map((event) => (
+          <li key={event.id}>{event.title}</li>
+        ))}
+      </ul>
     </div>
   )
 }
-

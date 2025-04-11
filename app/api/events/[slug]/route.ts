@@ -1,11 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { updateEvent, getAllEvents, getEventWithVenue } from "@/lib/events-data"
 import type { Event } from "@/types/event"
 
 export async function GET(request: Request, { params }: { params: { slug: string } }) {
   const { slug } = params
   try {
     console.log(`API: Looking for event with slug: ${slug}`)
+
+    // Dynamically import the server-only module
+    const { getAllEvents, getEventWithVenue } = await import("@/lib/events-data")
 
     // First get all events and find the one with matching slug
     const events = await getAllEvents()
@@ -43,6 +45,7 @@ export async function PUT(request: NextRequest, { params }: { params: { slug: st
     console.log(`API: Updating event with slug: ${slug}`)
 
     // Find the event by slug first
+    const { getAllEvents, updateEvent } = await import("@/lib/events-data")
     const events = await getAllEvents()
     const existingEvent = events.find((event) => event.slug === slug)
 
@@ -105,4 +108,3 @@ export async function PUT(request: NextRequest, { params }: { params: { slug: st
     )
   }
 }
-
