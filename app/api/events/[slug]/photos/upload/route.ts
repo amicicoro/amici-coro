@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
-import { put } from "@vercel/blob"
+import { uploadEventPhoto } from "@/lib/events-data-cloudinary"
 
-export const runtime = "edge"
+export const runtime = "nodejs" // Change from edge to nodejs for Cloudinary
 
 // List of supported image MIME types
 const SUPPORTED_IMAGE_TYPES = [
@@ -15,11 +15,6 @@ const SUPPORTED_IMAGE_TYPES = [
   "image/heif",
   "application/octet-stream", // Some browsers send HEIC files with this MIME type
 ]
-
-// Helper function to check if a file is likely a HEIC file by name
-function isLikelyHeicFile(file: File): boolean {
-  return file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")
-}
 
 export async function POST(request: Request, { params }: { params: { slug: string } }) {
   const { slug } = params
@@ -41,36 +36,28 @@ export async function POST(request: Request, { params }: { params: { slug: strin
 
     console.log(`API: Received file upload request for ${file.name}, type: ${file.type}, size: ${file.size} bytes`)
 
-    // Check if the file type is supported or if it's a HEIC file by extension
-    if (!SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase()) && !isLikelyHeicFile(file)) {
+    // Simplify the file type check
+    // Check if the file type is supported
+    if (!SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) {
       console.log(`API: Unsupported file type: ${file.type || "unknown"}`)
       return NextResponse.json(
         {
-          error: `Unsupported file type: ${file.type || "unknown"}. Only JPEG, PNG, GIF, WebP, and HEIC are supported.`,
+          error: `Unsupported file type: ${file.type || "unknown"}. Only JPEG, PNG, GIF, WebP, SVG, and HEIC are supported.`,
         },
         { status: 400 },
       )
     }
 
-    // Generate a unique filename using timestamp
-    const timestamp = Date.now()
-    const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, "-")
-    const uniqueFileName = `${timestamp}-${sanitizedFilename}`
+    // Upload to Cloudinary using our new function
+    const result = await uploadEventPhoto(slug, file)
 
-    // Upload directly to Vercel Blob without using the events-data module
-    const result = await put(`data/events/${slug}/photos/${uniqueFileName}`, file, {
-      access: "public",
-      contentType: file.type || "application/octet-stream",
-      cacheControl: "public, max-age=31536000", // Cache for 1 year
-    })
+    console.log(`API: Successfully uploaded file ${file.name} to Cloudinary`)
 
-    console.log(`API: Successfully uploaded file ${file.name} to ${result.pathname}`)
-
-    // Return the blob URL and metadata
+    // Return the result
     return NextResponse.json({
       url: result.url,
       pathname: result.pathname,
-      contentType: file.contentType || file.type || "application/octet-stream",
+      contentType: result.contentType,
     })
   } catch (error) {
     console.error(`API: Error uploading photo for event with slug ${slug}:`, error)
