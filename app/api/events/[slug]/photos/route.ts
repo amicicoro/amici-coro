@@ -5,8 +5,8 @@ export async function GET(request: Request, { params }: { params: { slug: string
     const { slug } = params
     console.log(`API: Fetching photos for event with slug: ${slug}`)
 
-    // Dynamically import the server-only module
-    const { getEventPhotos } = await import("@/lib/events-data")
+    // Dynamically import the Cloudinary version of the function
+    const { getEventPhotos } = await import("@/lib/events-data-cloudinary")
 
     // Get photos for the event
     const photos = await getEventPhotos(slug)

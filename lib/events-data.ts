@@ -21,9 +21,9 @@ const CACHE_KEYS = {
 
 // Cache TTLs in seconds
 const CACHE_TTL = {
-  EVENTS: 60 * 60 * 24 * 90, // 90 days
-  PHOTOS: 60 * 60 * 24 * 90, // 90 days
-  VENUES: 60 * 60 * 24 * 90, // 90 days
+  EVENTS: 60 * 60 * 24 * 7, // 7 days
+  PHOTOS: 60 * 60 * 24 * 14, // 14 days
+  VENUES: 60 * 60 * 24 * 30, // 30 days (venues rarely change)
 }
 
 // Helper function to extract version number from filename
@@ -584,12 +584,6 @@ export async function getEventBySlug(slug: string): Promise<Event | null> {
   }
 }
 
-// Add this helper function to detect HEIC files by extension only (server-safe)
-export function isHeicFileByExtension(filename: string): boolean {
-  return filename.toLowerCase().endsWith(".heic") || filename.toLowerCase().endsWith(".heif")
-}
-
-// Update the uploadEventPhoto function to handle HEIC files on the server
 export async function uploadEventPhoto(
   slug: string,
   file: File,
@@ -607,13 +601,6 @@ export async function uploadEventPhoto(
     const timestamp = Date.now()
     const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, "-")
     const uniqueFileName = `${timestamp}-${sanitizedFilename}`
-
-    // Check if this is a HEIC file by extension
-    const isHeic = isHeicFileByExtension(file.name)
-    if (isHeic) {
-      console.log(`Detected HEIC file by extension: ${file.name}`)
-      // We'll still upload it, but client-side will need to handle conversion
-    }
 
     // Upload the file to blob storage using the event slug
     const blob = await put(`data/events/${slug}/photos/${uniqueFileName}`, file, {

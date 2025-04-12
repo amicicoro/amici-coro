@@ -18,11 +18,9 @@ import {
   CheckCircle,
   Loader2,
   AlertCircle,
-  Info,
   RefreshCw,
   FileWarning,
 } from "lucide-react"
-import { convertHeicToJpeg, isHeicFile } from "@/lib/client-utils"
 import { PhotoGallery } from "@/components/photo-gallery"
 
 interface Photo {
@@ -36,8 +34,6 @@ interface PhotoPreview {
   preview: string
   status: "pending" | "uploading" | "completed" | "failed" | "unsupported"
   error?: string
-  isHeic?: boolean
-  convertedFile?: File
 }
 
 // List of supported image MIME types
@@ -176,34 +172,6 @@ export default function AdminEventPhotosPage() {
           photoPreview.error = `Unsupported file type: ${file.type || "unknown"}`
           processedFiles.push(photoPreview)
           continue
-        }
-
-        // Check if it's a HEIC file
-        let fileIsHeic = false
-        try {
-          fileIsHeic = await isHeicFile(file)
-          console.log(`HEIC detection result for ${file.name}: ${fileIsHeic}`)
-        } catch (error) {
-          console.error(`Error detecting HEIC file ${file.name}:`, error)
-          // If detection fails, check by extension as fallback
-          fileIsHeic = file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")
-        }
-
-        if (fileIsHeic) {
-          photoPreview.isHeic = true
-          console.log(`File ${file.name} is a HEIC file, will attempt conversion`)
-
-          try {
-            // Try to convert HEIC to JPEG
-            console.log(`Converting HEIC file: ${file.name}`)
-            const convertedFile = await convertHeicToJpeg(file)
-            photoPreview.convertedFile = convertedFile
-            console.log(`Successfully converted ${file.name} to JPEG (${convertedFile.size} bytes)`)
-          } catch (err) {
-            console.error(`Failed to convert HEIC file: ${file.name}`, err)
-            // Don't mark as failed, just continue without conversion
-            console.log(`Will upload original file without conversion`)
-          }
         }
 
         processedFiles.push(photoPreview)
@@ -489,7 +457,6 @@ export default function AdminEventPhotosPage() {
   const completedCount = photoUploads.filter((p) => p.status === "completed").length
   const failedCount = photoUploads.filter((p) => p.status === "failed").length
   const unsupportedCount = photoUploads.filter((p) => p.status === "unsupported").length
-  const heicCount = photoUploads.filter((p) => p.isHeic).length
 
   // Function to manually trigger file selection
   const triggerFileSelection = () => {
@@ -541,20 +508,6 @@ export default function AdminEventPhotosPage() {
 
           {uploadError && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">{uploadError}</div>
-          )}
-
-          {/* HEIC file notice */}
-          {heicCount > 0 && (
-            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-md mb-4 flex items-start gap-2">
-              <Info className="h-5 w-5 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-medium">HEIC files detected ({heicCount})</p>
-                <p className="text-sm mt-1">
-                  HEIC files will be automatically converted to JPEG during upload. This may take longer than regular
-                  image uploads.
-                </p>
-              </div>
-            </div>
           )}
 
           {/* Unsupported file notice */}
@@ -635,13 +588,6 @@ export default function AdminEventPhotosPage() {
                       {/* Status indicator */}
                       <div className="absolute top-2 left-2">{getStatusIcon(photo.status)}</div>
 
-                      {/* HEIC indicator */}
-                      {photo.isHeic && (
-                        <div className="absolute top-2 left-8 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded">
-                          HEIC
-                        </div>
-                      )}
-
                       {/* Status overlay for uploading */}
                       {photo.status === "uploading" && (
                         <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
@@ -707,9 +653,7 @@ export default function AdminEventPhotosPage() {
                   <div className="w-full bg-muted rounded-full h-2.5">
                     <div className="bg-primary h-2.5 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
                   </div>
-                  <p className="text-sm text-center text-muted-foreground">
-                    Uploading... {uploadProgress}%{heicCount > 0 && " (HEIC conversion may take longer)"}
-                  </p>
+                  <p className="text-sm text-center text-muted-foreground">Uploading... {uploadProgress}%</p>
                 </div>
               )}
 
@@ -758,4 +702,3 @@ export default function AdminEventPhotosPage() {
     </div>
   )
 }
-
