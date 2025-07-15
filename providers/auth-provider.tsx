@@ -22,13 +22,13 @@ export const AuthProvider = ({
   initialUser: User | null;
   initialRoles: Role[] | null;
 }) => {
-  const authContextValue = {
+  const authContextValue = initialUser ? {
     user: {
       ...initialUser,
       roles: initialRoles || [],
     },
     session: initialSession,
-  };
+  } : {};
 
   return (
     <AuthContext.Provider value={authContextValue}>

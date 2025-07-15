@@ -4,6 +4,7 @@ import { PropsWithChildren } from 'react';
 
 import { useAuth } from '@/providers/auth-provider';
 import type { Role } from '@/types/user';
+import { LogoutButton } from "@/components/admin/logout-button";
 
 export type RequiresRoleProps = PropsWithChildren<{
   allowedRoles: Role[];
@@ -20,6 +21,7 @@ export const RequiresRole = ({ allowedRoles, children }: RequiresRoleProps) => {
               You do not have sufficient privileges to access this page. Please
               speak to the site admin.
             </h2>
+            <LogoutButton />
           </div>
         </div>
       </div>
