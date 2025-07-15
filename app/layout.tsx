@@ -4,8 +4,8 @@ import './globals.css';
 
 import { getUserRoles } from '@/actions/user-actions';
 import { CookieConsent } from '@/components/cookie-consent';
-import { Footer } from '@/components/layout/Footer';
-import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/footer';
+import { Header } from '@/components/layout/header';
 import { extractSiteUrl } from '@/lib/url-utils';
 import { getSession, getUser } from '@/lib/user-utils';
 import { AuthProvider } from '@/providers/auth-provider';
