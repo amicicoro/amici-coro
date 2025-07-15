@@ -1,4 +1,4 @@
-import "server-only"
+import 'server-only';
 
 // Simple in-memory cache statistics
 let stats = {
@@ -7,22 +7,22 @@ let stats = {
   sets: 0,
   errors: 0,
   lastReset: new Date().toISOString(),
-}
+};
 
 export function recordCacheHit() {
-  stats.hits++
+  stats.hits++;
 }
 
 export function recordCacheMiss() {
-  stats.misses++
+  stats.misses++;
 }
 
 export function recordCacheSet() {
-  stats.sets++
+  stats.sets++;
 }
 
 export function recordCacheError() {
-  stats.errors++
+  stats.errors++;
 }
 
 export function resetStats() {
@@ -32,15 +32,18 @@ export function resetStats() {
     sets: 0,
     errors: 0,
     lastReset: new Date().toISOString(),
-  }
+  };
 }
 
 export function getCacheStats() {
-  const hitRate = stats.hits + stats.misses > 0 ? ((stats.hits / (stats.hits + stats.misses)) * 100).toFixed(2) : "0.00"
+  const hitRate =
+    stats.hits + stats.misses > 0
+      ? ((stats.hits / (stats.hits + stats.misses)) * 100).toFixed(2)
+      : '0.00';
 
   return {
     ...stats,
     hitRate: `${hitRate}%`,
     total: stats.hits + stats.misses,
-  }
+  };
 }
