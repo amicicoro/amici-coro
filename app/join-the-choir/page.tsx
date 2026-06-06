@@ -137,13 +137,13 @@ export default function JoinTheChoir() {
               our Director of Music, Andrew Scott.
             </p>
             <div className='pt-4'>
-              <Link href='mailto:scottnandrew@aol.com'>
+              <Link href='mailto:amicicoro@yahoo.com'>
                 <Button
                   variant='outline'
                   size='lg'
                   className='border-2 border-black text-black hover:bg-black hover:text-white transition-colors'
                 >
-                  Email the Director of Music
+                  Email us
                 </Button>
               </Link>
             </div>
