@@ -33,7 +33,6 @@ export function Header() {
             ['Events', '/events'],
             ['Past Events', '/past-events'],
             ['Join the Choir', '/join-the-choir'],
-            ['Director of Music', '/director-of-music'],
           ].map(([title, url]) => (
             <Link
               key={url}
