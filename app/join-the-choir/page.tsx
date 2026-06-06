@@ -133,17 +133,16 @@ export default function JoinTheChoir() {
               to attend one of our rehearsals to get a feel for the choir.
             </p>
             <p className='text-lg leading-relaxed'>
-              To express your interest or for more information, please contact
-              our Director of Music, Andrew Scott.
+              To express your interest or for more information, please contact us.
             </p>
             <div className='pt-4'>
-              <Link href='mailto:scottnandrew@aol.com'>
+              <Link href='mailto:amicicoro@yahoo.com'>
                 <Button
                   variant='outline'
                   size='lg'
                   className='border-2 border-black text-black hover:bg-black hover:text-white transition-colors'
                 >
-                  Email the Director of Music
+                  Email Us
                 </Button>
               </Link>
             </div>
