@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { DeleteEventButton } from '@/components/admin/delete-event-button';
 import type { Event } from '@/types/event';
 
 interface EventCardProps {
@@ -63,6 +64,7 @@ export function EventCard({ event, type }: EventCardProps) {
                 </span>
               </Link>
             </Button>
+            <DeleteEventButton eventId={event.id} eventTitle={event.title} />
           </div>
         </div>
       </CardHeader>
